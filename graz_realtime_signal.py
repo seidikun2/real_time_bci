@@ -28,7 +28,7 @@ NOISE_STD   = 0.5        # desvio-padrão do ruído branco
 # Padrão temporal (burst) disparado pelos marcadores
 BURST_FREQ = 10.0        # Hz
 BURST_AMP  = 1.5         # amplitude
-BURST_DUR  = 2.5         # s
+BURST_DUR  = 3.5         # s
 TAPER_FRAC = 0.2         # fração para janela Hann no início/final
 
 # Ganhos por hemisfério (esq, dir) para cada mão (contralateral)
@@ -54,7 +54,6 @@ CODE_MAP = {
 LOG_DIR = r"C:\Users\User\Desktop\Dados"   # pasta de saída
 FLUSH_EVERY_N_SIGNAL_ROWS = 100            # flush periódico do CSV do sinal
 # ==========================
-
 
 def make_signal_outlet(channels: int, fs: float, name: str, stype: str) -> StreamOutlet:
     info = StreamInfo(name, stype, channels, fs, 'float32', 'simEEG-Graz')
@@ -201,10 +200,7 @@ def marker_thread(inlet: StreamInlet, event_queue:deque, channels:int, profile_l
             time.sleep(0.1)
 
 
-def streaming_loop(outlet: StreamOutlet,
-                   event_queue: deque,
-                   wS, lockS,
-                   unix_offset: float):
+def streaming_loop(outlet: StreamOutlet, event_queue: deque, wS, lockS, unix_offset: float):
     """
     Gera e envia o sinal em taxa fixa, somando ruído + eventos ativos, e salva no CSV do sinal.
     """
@@ -273,22 +269,21 @@ def streaming_loop(outlet: StreamOutlet,
             print("Erro no streaming:", e)
             time.sleep(0.05)
 
-
 def main():
     # Outlet do sinal
-    outlet = make_signal_outlet(CHANNELS, FS, SIGNAL_NAME, SIGNAL_TYPE)
+    outlet      = make_signal_outlet(CHANNELS, FS, SIGNAL_NAME, SIGNAL_TYPE)
     print(f"Outlet pronto: name={SIGNAL_NAME}, type={SIGNAL_TYPE}, fs={FS}, ch={CHANNELS}")
 
     # Inlet dos marcadores (bloqueia até encontrar)
-    inlet = resolve_marker_inlet(MARKER_NAME, MARKER_TYPE)
+    inlet       = resolve_marker_inlet(MARKER_NAME, MARKER_TYPE)
 
     # Conversão LSL -> Unix (aprox.): Unix ≈ LSL + offset
     unix_offset = time.time() - local_clock()
 
     # Abertura de CSVs
     fS, wS, sig_path, fM, wM, mrk_path = open_csv_writers()
-    lockS = threading.Lock()
-    lockM = threading.Lock()
+    lockS       = threading.Lock()
+    lockM       = threading.Lock()
 
     # Fila de eventos
     event_queue = deque()
@@ -310,7 +305,6 @@ def main():
         try: fM.close()
         except Exception: pass
         print(f"Arquivos salvos:\n - {sig_path}\n - {mrk_path}")
-
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-# train_graz_riemann_from_logs.py
+# train_graz_riemann_from_logs_2classes.py
 import os
 import re
 import glob
@@ -17,30 +17,27 @@ from pyriemann.tangentspace import tangent_space
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional
 
-
 # -----------------------------
 # Config & datatypes
 # -----------------------------
 @dataclass
 class Params:
-    epoch_s: float = 2.0       # janela (s)
-    step_s: float = 0.1        # passo (s)
-    max_trial_s: float = 3.75  # pós-ATTEMPT (s)
-    bp_order: int = 4
+    epoch_s: float               = 2.0        # janela (s)
+    step_s: float                = 0.1        # passo (s)
+    max_trial_s: float           = 3.75       # pós-ATTEMPT (s)
+    bp_order: int                = 4
     bp_band: Tuple[float, float] = (8.0, 30.0)
-    n_cv: int = 20
-    pca_dim: int = 2
-    svc_c: float = 1.0
-    rng_seed: int = 42
-    trial_offset_s: float = 0.0  # ignorar os primeiros X s depois do ATTEMPT
-
+    n_cv: int                    = 20
+    pca_dim: int                 = 2
+    svc_c: float                 = 1.0
+    rng_seed: int                = 42
+    trial_offset_s: float        = 0.0        # ignorar os primeiros X s depois do ATTEMPT
 
 # -----------------------------
 # Logging helper
 # -----------------------------
 def _log(msg: str) -> None:
     print(f"[train] {msg}")
-
 
 # -----------------------------
 # IO helpers
@@ -51,9 +48,8 @@ def find_latest(folder: str, pattern: str) -> str:
         raise FileNotFoundError(f"Nenhum arquivo encontrado em: {os.path.join(folder, pattern)}")
     return max(files, key=os.path.getmtime)
 
-
 def read_markers_csv(path: str) -> Tuple[np.ndarray, List[str]]:
-    """CSV de marcadores do simulador: usa lsl_time_s e label (ou code)."""
+    """CSV de marcadores: usa lsl_time_s e label (ou code)."""
     df = pd.read_csv(path)
     if "lsl_time_s" in df.columns:
         t = pd.to_numeric(df["lsl_time_s"], errors="coerce").to_numpy(dtype=float)
@@ -76,23 +72,26 @@ def read_markers_csv(path: str) -> Tuple[np.ndarray, List[str]]:
     ok = np.isfinite(t)
     return t[ok], [labels[i] for i in np.where(ok)[0]]
 
-
 def read_signal_csv(path: str) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """
-    CSV do sinal do simulador:
-    header típico: ['iso_time','lsl_time_s','ch1','ch2',...]
+    CSV do sinal:
+    header típico: ['iso_time','lsl_time_s','ch1','ch2',...] ou com 'local_recv_s'
     """
     df = pd.read_csv(path, low_memory=False)
     if "lsl_time_s" not in df.columns:
         raise KeyError("CSV do sinal precisa ter a coluna 'lsl_time_s'.")
-
     t = pd.to_numeric(df["lsl_time_s"], errors="coerce").to_numpy(dtype=float)
 
+    # canais: ch1..chN (case-insensitive) ou tudo após iso_time/lsl_time_s[/local_recv_s]
     ch_cols = [c for c in df.columns if re.match(r"(?i)^ch\d+$", c)]
     if not ch_cols:
-        maybe = df.columns.tolist()
-        if len(maybe) > 2:
-            ch_cols = maybe[2:]
+        cols = df.columns.tolist()
+        start_idx = 0
+        if "iso_time" in df.columns: start_idx += 1
+        if "lsl_time_s" in df.columns: start_idx += 1
+        if "local_recv_s" in df.columns: start_idx += 1
+        if len(cols) > start_idx:
+            ch_cols = cols[start_idx:]
     if not ch_cols:
         raise KeyError("Não encontrei colunas de canais (ex.: ch1, ch2, ...).")
 
@@ -100,12 +99,10 @@ def read_signal_csv(path: str) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     ok = np.isfinite(t) & np.all(np.isfinite(X), axis=1)
     return t[ok], X[ok, :], ch_cols
 
-
 def estimate_fs(t: np.ndarray) -> float:
     d = np.diff(t)
     d = d[(d > 0) & np.isfinite(d)]
     return float(1.0 / np.median(d)) if d.size else 0.0
-
 
 # -----------------------------
 # Signal helpers
@@ -114,29 +111,26 @@ def bandpass(data: np.ndarray, fs: float, order: int, band: Tuple[float, float])
     b, a = signal.butter(order, band, btype="bandpass", fs=fs)
     return signal.filtfilt(b, a, data.T).T
 
-
-def sliding_windows(length: int, fs: float, epoch_s: float, step_s: float,
-                    start: int = 0, stop: Optional[int] = None) -> List[np.ndarray]:
-    n = int(round(epoch_s * fs))
-    hop = int(round(step_s * fs))
+def sliding_windows(length:int, fs:float, epoch_s:float, step_s:float,
+                    start:int = 0, stop:Optional[int] = None) -> List[np.ndarray]:
+    n     = int(round(epoch_s * fs))
+    hop   = int(round(step_s * fs))
     start = int(start)
-    stop = length if stop is None else int(stop)
+    stop  = length if stop is None else int(stop)
     if stop - start < n:
         return []
-    idx0 = np.arange(start, start + n)
-    out = []
+    idx0  = np.arange(start, start + n)
+    out   = []
     while idx0[-1] < stop:
         out.append(idx0.copy())
         idx0 += hop
     return out
-
 
 def nearest_index(t: np.ndarray, x: float) -> int:
     i = np.searchsorted(t, x)
     if i <= 0: return 0
     if i >= len(t): return len(t) - 1
     return i - 1 if abs(t[i - 1] - x) <= abs(t[i] - x) else i
-
 
 # -----------------------------
 # Epoching alinhado ao ATTEMPT
@@ -155,15 +149,8 @@ def attempts_by_class(t_mark: np.ndarray, labels: List[str]) -> Dict[str, List[f
                 out[last_cue].append(ts)
     return out
 
-
-def epoch_trials_from_attempts(
-    t_sig: np.ndarray,
-    X: np.ndarray,
-    attempts_by_cls: Dict[str, List[float]],
-    label_map: Dict[str, int],
-    p: Params,
-    fs: float,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def epoch_trials_from_attempts(t_sig: np.ndarray, X: np.ndarray, attempts_by_cls: Dict[str, List[float]],
+                               label_map: Dict[str, int], p: Params, fs: float,) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Gera janelas deslizantes dentro de cada tentativa (alinhadas ao ATTEMPT)."""
     trial_windows: List[np.ndarray] = []
     y_list: List[int] = []
@@ -177,9 +164,8 @@ def epoch_trials_from_attempts(
             i0 = nearest_index(t_sig, t0)
             start = i0 + int(round(p.trial_offset_s * fs))
             stop  = i0 + int(round(p.max_trial_s * fs))
-            idxs = sliding_windows(length=len(t_sig), fs=fs,
-                                   epoch_s=p.epoch_s, step_s=p.step_s,
-                                   start=start, stop=stop)
+            idxs  = sliding_windows(length=len(t_sig), fs=fs, epoch_s=p.epoch_s, step_s=p.step_s,
+                                    start=start, stop=stop)
             if not idxs:
                 empty_trials += 1
                 continue
@@ -201,7 +187,6 @@ def epoch_trials_from_attempts(
     rng = np.random.default_rng(p.rng_seed)
     perm = rng.permutation(len(y_list))
     return Xw[perm], np.array(y_list)[perm], np.array(trial_id)[perm]
-
 
 # -----------------------------
 # Modelo (Riemann + PCA + SVM)
@@ -241,39 +226,29 @@ def pick_cmean_via_cv(X: np.ndarray, y: np.ndarray, trial_id: np.ndarray, p: Par
         _log(f"melhor acurácia CV: {best_acc:.3f}")
     return best_c
 
-
 # -----------------------------
 # Plot PCA scatter (+ fronteira)
 # -----------------------------
 CLASS_COLOR = {0: "#4169e1", 1: "#dc143c"}  # LEFT, RIGHT
 
-def plot_pca_space(X_pca: np.ndarray,
-                   y: Optional[np.ndarray],
-                   clf: Optional[SVC],
-                   out_png: Optional[str],
-                   show: bool,
-                   title: str = "PCA space (tangent → PCA)") -> None:
+def plot_pca_space(X_pca: np.ndarray, y: np.ndarray, clf: SVC,
+                   out_png: Optional[str], show: bool,
+                   title: str = "PCA (LEFT vs RIGHT)") -> None:
     dim = X_pca.shape[1]
     if dim == 1:  # completar 2D para visualização
         X_pca = np.c_[X_pca[:, 0], np.zeros_like(X_pca[:, 0])]
         dim = 2
 
     fig, ax = plt.subplots(figsize=(7, 6))
-    if y is None:
-        ax.scatter(X_pca[:, 0], X_pca[:, 1], s=12, alpha=0.7, edgecolor="none")
-    else:
-        for c in np.unique(y):
-            m = (y == c)
-            ax.scatter(X_pca[m, 0], X_pca[m, 1],
-                       s=16, alpha=0.75, edgecolor="none",
-                       label=f"class {c}", color=CLASS_COLOR.get(int(c), "k"))
-            # centro por classe
-            mu = X_pca[m].mean(axis=0)
-            ax.plot(mu[0], mu[1], marker="x", ms=10, mew=2,
-                    color=CLASS_COLOR.get(int(c), "k"))
+    for c in np.unique(y):
+        m = (y == c)
+        ax.scatter(X_pca[m, 0], X_pca[m, 1], s=16, alpha=0.75, edgecolor="none",
+                   label=f"class {c}", color=CLASS_COLOR.get(int(c), "k"))
+        mu = X_pca[m].mean(axis=0)
+        ax.plot(mu[0], mu[1], marker="x", ms=10, mew=2, color=CLASS_COLOR.get(int(c), "k"))
 
     # Fronteira do SVM em 2D (se disponível)
-    if clf is not None and hasattr(clf, "coef_") and X_pca.shape[1] >= 2:
+    if hasattr(clf, "coef_") and X_pca.shape[1] >= 2:
         w = clf.coef_[0]
         b = clf.intercept_[0]
         if abs(w[1]) > 1e-9:
@@ -285,8 +260,7 @@ def plot_pca_space(X_pca: np.ndarray,
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.set_title(title)
-    if y is not None:
-        ax.legend(frameon=False, loc="best")
+    ax.legend(frameon=False, loc="best")
     plt.tight_layout()
 
     if out_png:
@@ -297,12 +271,11 @@ def plot_pca_space(X_pca: np.ndarray,
     else:
         plt.close(fig)
 
-
 # -----------------------------
-# Pipeline principal
+# Pipeline principal (2 classes)
 # -----------------------------
 def train_from_logs(markers_csv: str, signal_csv: str, out_prefix: Optional[str],
-                    classes: str = "2classes", p: Params = Params(),
+                    p: Params = Params(),
                     savefig: bool = False, noshow: bool = False) -> None:
     _log(f"lendo marcadores: {markers_csv}")
     t_mark, labels = read_markers_csv(markers_csv)
@@ -327,72 +300,42 @@ def train_from_logs(markers_csv: str, signal_csv: str, out_prefix: Optional[str]
         base = os.path.splitext(os.path.basename(signal_csv))[0]
         out_prefix = os.path.join(os.path.dirname(signal_csv), base)
 
-    # ---------- FREE ----------
-    if classes == "free":
-        idxs = sliding_windows(len(t_sig), fs, p.epoch_s, p.step_s)
-        if not idxs:
-            raise ValueError("Nenhuma janela para 'free'. Ajuste epoch/step.")
-        Xw = np.swapaxes(np.stack([X[i, :] for i in idxs], axis=0), 1, 2)  # (N, C, T)
-        cov_all = Covariances("lwf").transform(Xw)
-        cmean = mean_covariance(cov_all)
-        ts_all = tangent_space(cov_all, cmean)
-        dim = max(1, min(p.pca_dim, ts_all.shape[1]))
-        pca = PCA(n_components=dim).fit(ts_all)
-        X_pca = pca.transform(ts_all)
-        clf = None
-        kde_dict = {}
-        # plot PCA (sem rótulos)
-        out_png = out_prefix + "_pca_scatter.png" if savefig else None
-        plot_pca_space(X_pca, y=None, clf=None, out_png=out_png,
-                       show=not noshow, title="PCA (free)")
+    # ----- 2 CLASSES -----
+    label_map = {"LEFT_MI_STIM": 0, "RIGHT_MI_STIM": 1}
+    Xw, y, trial_id = epoch_trials_from_attempts(t_sig, X, attempts, label_map, p, fs)
+    _log(f"#janelas: {Xw.shape[0]} | C={Xw.shape[1]} | T={Xw.shape[2]} | #trials={len(np.unique(trial_id))}")
+    if Xw.shape[0] < 2:
+        raise ValueError("Amostras insuficientes para treino.")
 
-        # extents p/ UI
-        x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
-        if dim >= 2:
-            y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
-        else:
-            y_min, y_max = 0.0, 1.0
+    cmean = pick_cmean_via_cv(Xw, y, trial_id, p)
+    cov   = Covariances("oas").transform(Xw)
+    ts    = tangent_space(cov, cmean)
+    dim   = max(1, min(p.pca_dim, ts.shape[1]))
+    pca   = PCA(n_components=dim).fit(ts)
+    X_pca = pca.transform(ts)
 
-    # ---------- 2 CLASSES ----------
-    elif classes == "2classes":
-        label_map = {"LEFT_MI_STIM": 0, "RIGHT_MI_STIM": 1}
-        Xw, y, trial_id = epoch_trials_from_attempts(t_sig, X, attempts, label_map, p, fs)
-        _log(f"#janelas: {Xw.shape[0]} | C={Xw.shape[1]} | T={Xw.shape[2]} | #trials={len(np.unique(trial_id))}")
-        if Xw.shape[0] < 2:
-            raise ValueError("Amostras insuficientes para treino.")
+    clf   = SVC(kernel="linear", C=p.svc_c)
+    clf.fit(X_pca, y)
 
-        cmean = pick_cmean_via_cv(Xw, y, trial_id, p)
-        cov = Covariances("oas").transform(Xw)
-        ts = tangent_space(cov, cmean)
-        dim = max(1, min(p.pca_dim, ts.shape[1]))
-        pca = PCA(n_components=dim).fit(ts)
-        X_pca = pca.transform(ts)
+    # plot PCA com classes e fronteira
+    out_png = out_prefix + "_pca_scatter.png" if savefig else None
+    plot_pca_space(X_pca, y=y, clf=clf, out_png=out_png, show=not noshow, title="PCA (LEFT vs RIGHT)")
 
-        clf = SVC(kernel="linear", C=p.svc_c)
-        clf.fit(X_pca, y)
-
-        # plot PCA com classes e fronteira
-        out_png = out_prefix + "_pca_scatter.png" if savefig else None
-        plot_pca_space(X_pca, y=y, clf=clf, out_png=out_png,
-                       show=not noshow, title="PCA (LEFT vs RIGHT)")
-
-        x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
-        if dim >= 2:
-            y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
-        else:
-            y_min, y_max = 0.0, 1.0
-
-        # KDE opcional (mantido do pipeline original; pode ser útil depois)
-        kde_dict: Dict[str, gaussian_kde] = {}
-        for c in np.unique(y):
-            cls = X_pca[y == c]
-            if cls.shape[0] >= 3 and dim >= 2:
-                try:
-                    kde_dict[f"kde{c}"] = gaussian_kde(cls[:, :2].T)
-                except Exception as e:
-                    _log(f"KDE falhou p/ classe {c}: {e}")
+    x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
+    if dim >= 2:
+        y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
     else:
-        raise ValueError("classes deve ser '2classes' ou 'free'.")
+        y_min, y_max = 0.0, 1.0
+
+    # KDE opcional
+    kde_dict: Dict[str, gaussian_kde] = {}
+    for c in np.unique(y):
+        cls = X_pca[y == c]
+        if cls.shape[0] >= 3 and dim >= 2:
+            try:
+                kde_dict[f"kde{c}"] = gaussian_kde(cls[:, :2].T)
+            except Exception as e:
+                _log(f"KDE falhou p/ classe {c}: {e}")
 
     # Persist artifacts
     with open(out_prefix + "_range_pca.pkl", "wb") as f:
@@ -401,26 +344,25 @@ def train_from_logs(markers_csv: str, signal_csv: str, out_prefix: Optional[str]
         pickle.dump(cmean, f)
     with open(out_prefix + "_dim_red.pkl", "wb") as f:
         pickle.dump(pca, f)
-    if classes == "2classes" and clf is not None:
-        with open(out_prefix + "_classifier.pkl", "wb") as f:
-            pickle.dump(clf, f)
-    if classes == "2classes" and 'kde_dict' in locals() and kde_dict:
+    with open(out_prefix + "_classifier.pkl", "wb") as f:
+        pickle.dump(clf, f)
+    if kde_dict:
         with open(out_prefix + "_kde.pkl", "wb") as f:
             pickle.dump(kde_dict, f)
 
     _log("OK — artefatos salvos.")
     _log(f"prefixo: {out_prefix}")
 
-
 # -----------------------------
-# CLI
+# CLI (apenas 2 classes)
 # -----------------------------
 def main():
-    ap = argparse.ArgumentParser(description="Treino Riemann/PCA/SVM a partir de logs (sinal+marcadores) do Graz, com plot do espaço PCA.")
+    ap = argparse.ArgumentParser(
+        description="Treino Riemann/PCA/SVM a partir de logs (sinal+marcadores) do Graz — 2 classes (LEFT/RIGHT), alinhado ao ATTEMPT."
+    )
     ap.add_argument("--dir", "-d", default=r"C:\Users\User\Desktop\Dados", help="Pasta com os CSVs.")
     ap.add_argument("--markers", "-m", default=None, help="CSV de marcadores (graz_*markers_*.csv). Se None, pega o mais recente.")
     ap.add_argument("--signal", "-s", default=None, help="CSV de sinal (graz_*signal_*.csv). Se None, pega o mais recente.")
-    ap.add_argument("--classes", choices=["2classes", "free"], default="2classes", help="Treino supervisionado (2classes) ou só projeção (free).")
     ap.add_argument("--epoch", type=float, default=2.0, help="Tamanho da janela (s).")
     ap.add_argument("--step", type=float, default=0.1, help="Passo entre janelas (s).")
     ap.add_argument("--trialmax", type=float, default=3.75, help="Janela máxima pós-ATTEMPT (s).")
@@ -452,10 +394,7 @@ def main():
         trial_offset_s=args.trialoffset,
     )
 
-    train_from_logs(markers_csv, signal_csv, args.out_prefix,
-                    classes=args.classes, p=p,
-                    savefig=args.savefig, noshow=args.noshow)
-
+    train_from_logs(markers_csv, signal_csv, args.out_prefix, p=p, savefig=args.savefig, noshow=args.noshow)
 
 if __name__ == "__main__":
     main()

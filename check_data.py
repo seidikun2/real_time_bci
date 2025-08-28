@@ -6,25 +6,19 @@ import datetime as dt
 
 # ======== CONFIG RÁPIDA ========
 DATA_DIR      = r"C:\Users\User\Desktop\Dados"
-MARKERS_FILE  = None                 # None => pega o mais recente (*markers_*.csv)
-SIGNAL_FILE   = None                 # None => pega o mais recente (*signal_*.csv)
+MARKERS_FILE  = DATA_DIR + r'\graz_sim_markers_20250828_174406.csv'                 # None => pega o mais recente (*markers_*.csv)
+SIGNAL_FILE   = None #DATA_DIR + r'\graz_sim_signal_20250828_161404.csv'                 # None => pega o mais recente (*signal_*.csv)
 
 # Classes mostradas nas linhas de subplots (derivadas do cue anterior ao ATTEMPT)
 CLASSES       = ("LEFT_MI_STIM", "RIGHT_MI_STIM")
 
 TMIN, TMAX    = -0.5, 3.75          # janela do recorte (s) relativa ao ATTEMPT
 BASELINE_S    = 0.0                 # 0.0 => sem correção de baseline
-SAVE_PNG      = False               # True => salva figuras ao lado do CSV do sinal
+SAVE_PNG      = True               # True => salva figuras ao lado do CSV do sinal
 
 # Cores para linhas de marcação / epochs
-COLOR = {
-    "BASELINE":      "#7f7f7f",
-    "ATTENTION":     "#ff7f0e",
-    "LEFT_MI_STIM":  "#4169e1",
-    "RIGHT_MI_STIM": "#dc143c",
-    "ATTEMPT":       "#2e8b57",
-    "REST":          "#800080",
-}
+COLOR         = {"BASELINE": "#7f7f7f", "ATTENTION": "#ff7f0e", "LEFT_MI_STIM": "#4169e1",
+                 "RIGHT_MI_STIM":"#dc143c", "ATTEMPT":"#2e8b57", "REST": "#800080",}
 # ===============================
 
 def find_latest(folder: str, pattern: str) -> str:
@@ -223,8 +217,8 @@ def main():
 
     if SAVE_PNG:
         base = os.path.splitext(sig_path)[0]
-        f1 = base + "_stack_raw_marks.png"
-        f2 = base + "_epochs_trials_ALLCHANNELS_ATTEMPT0.png"
+        f1   = base + "_stack_raw_marks.png"
+        f2   = base + "_epochs_trials_ALLCHANNELS_ATTEMPT0.png"
         fig1.savefig(f1, dpi=150); fig2.savefig(f2, dpi=150)
         print("Salvo:\n ", f1, "\n ", f2)
     else:
