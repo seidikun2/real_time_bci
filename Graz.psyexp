@@ -68,7 +68,7 @@
     <Param val="1000" valType="num" updates="None" name="plPupilRemoteTimeoutMs"/>
     <Param val="False" valType="bool" updates="None" name="plPupillometryOnly"/>
     <Param val="psychopy_iohub_surface" valType="str" updates="None" name="plSurfaceName"/>
-    <Param val="0" valType="code" updates="None" name="runMode"/>
+    <Param val="1" valType="code" updates="None" name="runMode"/>
     <Param val="False" valType="bool" updates="None" name="rush"/>
     <Param val="time" valType="str" updates="None" name="sortColumns"/>
     <Param val="" valType="str" updates="None" name="tbLicenseFile"/>
@@ -142,7 +142,7 @@
         <Param val="" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <ImageComponent name="image_instr1" plugin="None">
+      <ImageComponent name="attention_cross" plugin="None">
         <Param val="center" valType="str" updates="constant" name="anchor"/>
         <Param val="$[1,1,1]" valType="color" updates="constant" name="color"/>
         <Param val="rgb" valType="str" updates="constant" name="colorSpace"/>
@@ -152,10 +152,10 @@
         <Param val="" valType="code" updates="None" name="durationEstim"/>
         <Param val="False" valType="bool" updates="constant" name="flipHoriz"/>
         <Param val="False" valType="bool" updates="constant" name="flipVert"/>
-        <Param val="stims/line-art-attention-icon-or-symbol-vector.jpg" valType="file" updates="constant" name="image"/>
+        <Param val="stims/cross.png" valType="file" updates="constant" name="image"/>
         <Param val="linear" valType="str" updates="constant" name="interpolate"/>
         <Param val="" valType="str" updates="constant" name="mask"/>
-        <Param val="image_instr1" valType="code" updates="None" name="name"/>
+        <Param val="attention_cross" valType="code" updates="None" name="name"/>
         <Param val="" valType="num" updates="constant" name="opacity"/>
         <Param val="0" valType="num" updates="constant" name="ori"/>
         <Param val="(-0.3, 0)" valType="list" updates="constant" name="pos"/>
@@ -171,7 +171,7 @@
         <Param val="from exp settings" valType="str" updates="None" name="units"/>
         <Param val="" valType="code" updates="None" name="validator"/>
       </ImageComponent>
-      <CodeComponent name="code_4" plugin="None">
+      <CodeComponent name="lsl_send_attention" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -186,7 +186,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code_4" valType="code" updates="None" name="name"/>
+        <Param val="lsl_send_attention" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
     <Routine name="Baseline">
@@ -206,7 +206,7 @@
         <Param val="5" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <CodeComponent name="code_2" plugin="None">
+      <CodeComponent name="lsl_send_baseline" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -221,7 +221,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code_2" valType="code" updates="None" name="name"/>
+        <Param val="lsl_send_baseline" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
     <Routine name="Stim">
@@ -241,7 +241,7 @@
         <Param val="" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <ImageComponent name="image_2" plugin="None">
+      <ImageComponent name="motor_cue" plugin="None">
         <Param val="center" valType="str" updates="constant" name="anchor"/>
         <Param val="$[1,1,1]" valType="color" updates="constant" name="color"/>
         <Param val="rgb" valType="str" updates="constant" name="colorSpace"/>
@@ -254,7 +254,7 @@
         <Param val="$img" valType="file" updates="set every repeat" name="image"/>
         <Param val="linear" valType="str" updates="constant" name="interpolate"/>
         <Param val="" valType="str" updates="constant" name="mask"/>
-        <Param val="image_2" valType="code" updates="None" name="name"/>
+        <Param val="motor_cue" valType="code" updates="None" name="name"/>
         <Param val="" valType="num" updates="constant" name="opacity"/>
         <Param val="0" valType="num" updates="constant" name="ori"/>
         <Param val="(0, 0)" valType="list" updates="constant" name="pos"/>
@@ -270,7 +270,7 @@
         <Param val="from exp settings" valType="str" updates="None" name="units"/>
         <Param val="" valType="code" updates="None" name="validator"/>
       </ImageComponent>
-      <CodeComponent name="code_3" plugin="None">
+      <CodeComponent name="lsl_send_stim" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -285,7 +285,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code_3" valType="code" updates="None" name="name"/>
+        <Param val="lsl_send_stim" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
     <Routine name="Attempt">
@@ -305,7 +305,7 @@
         <Param val="" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <ImageComponent name="image_3" plugin="None">
+      <ImageComponent name="attempt" plugin="None">
         <Param val="center" valType="str" updates="constant" name="anchor"/>
         <Param val="$[1,1,1]" valType="color" updates="constant" name="color"/>
         <Param val="rgb" valType="str" updates="constant" name="colorSpace"/>
@@ -315,10 +315,10 @@
         <Param val="" valType="code" updates="None" name="durationEstim"/>
         <Param val="False" valType="bool" updates="constant" name="flipHoriz"/>
         <Param val="False" valType="bool" updates="constant" name="flipVert"/>
-        <Param val="stims/attempt.jpg" valType="file" updates="constant" name="image"/>
+        <Param val="stims/cross.png" valType="file" updates="constant" name="image"/>
         <Param val="linear" valType="str" updates="constant" name="interpolate"/>
         <Param val="" valType="str" updates="constant" name="mask"/>
-        <Param val="image_3" valType="code" updates="None" name="name"/>
+        <Param val="attempt" valType="code" updates="None" name="name"/>
         <Param val="" valType="num" updates="constant" name="opacity"/>
         <Param val="0" valType="num" updates="constant" name="ori"/>
         <Param val="(0, 0)" valType="list" updates="constant" name="pos"/>
@@ -334,7 +334,7 @@
         <Param val="from exp settings" valType="str" updates="None" name="units"/>
         <Param val="" valType="code" updates="None" name="validator"/>
       </ImageComponent>
-      <CodeComponent name="code_5" plugin="None">
+      <CodeComponent name="lsl_send_attempt" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -349,7 +349,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code_5" valType="code" updates="None" name="name"/>
+        <Param val="lsl_send_attempt" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
     <Routine name="Rest">
@@ -369,36 +369,7 @@
         <Param val="" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <ImageComponent name="image_4" plugin="None">
-        <Param val="center" valType="str" updates="constant" name="anchor"/>
-        <Param val="$[1,1,1]" valType="color" updates="constant" name="color"/>
-        <Param val="rgb" valType="str" updates="constant" name="colorSpace"/>
-        <Param val="1" valType="num" updates="constant" name="contrast"/>
-        <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="False" valType="code" updates="constant" name="draggable"/>
-        <Param val="2" valType="code" updates="None" name="durationEstim"/>
-        <Param val="False" valType="bool" updates="constant" name="flipHoriz"/>
-        <Param val="False" valType="bool" updates="constant" name="flipVert"/>
-        <Param val="stims/relax.jpg" valType="file" updates="constant" name="image"/>
-        <Param val="linear" valType="str" updates="constant" name="interpolate"/>
-        <Param val="" valType="str" updates="constant" name="mask"/>
-        <Param val="image_4" valType="code" updates="None" name="name"/>
-        <Param val="" valType="num" updates="constant" name="opacity"/>
-        <Param val="0" valType="num" updates="constant" name="ori"/>
-        <Param val="(0, 0)" valType="list" updates="constant" name="pos"/>
-        <Param val="True" valType="bool" updates="None" name="saveStartStop"/>
-        <Param val="(0.5, 0.5)" valType="list" updates="constant" name="size"/>
-        <Param val="" valType="code" updates="None" name="startEstim"/>
-        <Param val="time (s)" valType="str" updates="None" name="startType"/>
-        <Param val="0.0" valType="code" updates="None" name="startVal"/>
-        <Param val="duration (s)" valType="str" updates="None" name="stopType"/>
-        <Param val="1.0" valType="code" updates="constant" name="stopVal"/>
-        <Param val="True" valType="bool" updates="None" name="syncScreenRefresh"/>
-        <Param val="128" valType="num" updates="constant" name="texture resolution"/>
-        <Param val="from exp settings" valType="str" updates="None" name="units"/>
-        <Param val="" valType="code" updates="None" name="validator"/>
-      </ImageComponent>
-      <CodeComponent name="code_6" plugin="None">
+      <CodeComponent name="lsl_send_rest" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -413,7 +384,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code_6" valType="code" updates="None" name="name"/>
+        <Param val="lsl_send_rest" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
     <Routine name="Start_LSL">
@@ -433,7 +404,7 @@
         <Param val="" valType="code" updates="constant" name="stopVal"/>
         <Param val="False" valType="bool" updates="None" name="useWindowParams"/>
       </RoutineSettingsComponent>
-      <CodeComponent name="code" plugin="None">
+      <CodeComponent name="start_lsl" plugin="None">
         <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
         <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
         <Param val="from pylsl import StreamInfo, StreamOutlet, local_clock&amp;#10;import json&amp;#10;&amp;#10;# Stream LSL (int32, assíncrono)&amp;#10;info   = StreamInfo('GrazMI_Markers', 'Markers', 1, 0, 'int32', 'GrazMI')&amp;#10;outlet = StreamOutlet(info)&amp;#10;&amp;#10;# Mapa Graz&amp;#10;code_map = {&amp;#10;    'BASELINE':1, 'ATTENTION':2, 'LEFT_MI_STIM':3,&amp;#10;    'RIGHT_MI_STIM':4, 'ATTEMPT':5, 'REST':6&amp;#10;}&amp;#10;&amp;#10;def _resolve_code(label):&amp;#10;    k = str(label).strip().upper()&amp;#10;    if k not in code_map:&amp;#10;        raise RuntimeError(f&quot;event_label '{label}' não mapeado em code_map.&quot;)&amp;#10;    return code_map[k]&amp;#10;&amp;#10;def _now_times():&amp;#10;    # tempos no instante do flip&amp;#10;    try:&amp;#10;        t_glob = globalClock.getTime()     # relógio do PsychoPy&amp;#10;    except Exception:&amp;#10;        from psychopy import core as _core&amp;#10;        t_glob = _core.getTime()&amp;#10;    t_lsl = local_clock()                  # relógio do LSL&amp;#10;    return t_glob, t_lsl&amp;#10;&amp;#10;def send_mark_label(label, tag=''):&amp;#10;    &quot;&quot;&quot;Agenda envio do marcador (derivado de event_label) no próximo flip.&quot;&quot;&quot;&amp;#10;    code = _resolve_code(label)&amp;#10;    def _do():&amp;#10;        t_glob, t_lsl = _now_times()&amp;#10;        outlet.push_sample([int(code)], timestamp=t_lsl)&amp;#10;        # log opcional em colunas (útil p/ depurar/sincronizar)&amp;#10;        thisExp.addData(f'{(tag or label)}_code',  int(code))&amp;#10;        thisExp.addData(f'{(tag or label)}_tGlob', t_glob)&amp;#10;        thisExp.addData(f'{(tag or label)}_tLSL',  t_lsl)&amp;#10;    win.callOnFlip(_do)&amp;#10;&amp;#10;def send_mark_code(code, tag=''):&amp;#10;    &quot;&quot;&quot;Versão direta por código inteiro, se precisar em rotinas fixas.&quot;&quot;&quot;&amp;#10;    def _do():&amp;#10;        t_glob, t_lsl = _now_times()&amp;#10;        outlet.push_sample([int(code)], timestamp=t_lsl)&amp;#10;        thisExp.addData(f'{(tag or code)}_code',  int(code))&amp;#10;        thisExp.addData(f'{(tag or code)}_tGlob', t_glob)&amp;#10;        thisExp.addData(f'{(tag or code)}_tLSL',  t_lsl)&amp;#10;    win.callOnFlip(_do)&amp;#10;" valType="extendedCode" updates="constant" name="Begin Experiment"/>
@@ -448,7 +419,7 @@
         <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
-        <Param val="code" valType="code" updates="None" name="name"/>
+        <Param val="start_lsl" valType="code" updates="None" name="name"/>
       </CodeComponent>
     </Routine>
   </Routines>
@@ -457,7 +428,7 @@
     <Routine name="Baseline"/>
     <LoopInitiator loopType="TrialHandler" name="trials">
       <Param name="Selected rows" updates="None" val="" valType="str"/>
-      <Param name="conditions" updates="None" val="[OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\right_arrow.jpg'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\right_arrow.jpg'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\right_arrow.jpg'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\right_arrow.jpg'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\right_arrow.jpg'), ('event_label', 'RIGHT_MI_STIM')])]" valType="str"/>
+      <Param name="conditions" updates="None" val="[OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')])]" valType="str"/>
       <Param name="conditionsFile" updates="None" val="stims_sequence.csv" valType="file"/>
       <Param name="endPoints" updates="None" val="[0, 1]" valType="num"/>
       <Param name="isTrials" updates="None" val="True" valType="bool"/>

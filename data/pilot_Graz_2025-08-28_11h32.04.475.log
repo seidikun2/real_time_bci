@@ -1,0 +1,90 @@
+77.0236 	DEBUG 	Fullscreen settings ignored as running in pilot mode.
+77.0249 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+77.7660 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+77.7660 	INFO 	OpenGL version supported by driver is 4..
+77.7914 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x000002430BF0BB80>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x000002430BF0BFD0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=False, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x000002430C33B6A0>, multiSample=False, name='window1', numSamples=2, pos=[50.0, 420.0], screen=0, size=array([800, 600]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+77.7915 	EXP 	window1: backgroundImage = ''
+77.7915 	EXP 	window1: backgroundFit = 'none'
+77.8160 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.8317 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.8475 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.8635 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.8796 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.8950 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9108 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9269 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9425 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9581 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9741 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+77.9902 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0062 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0224 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0385 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0548 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0709 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.0865 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1019 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1180 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1334 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1339 	DEBUG 	Uploading Texture Font fontname to graphics card
+78.1377 	DEBUG 	Upload of Texture Font fontname complete
+78.1618 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1781 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1942 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.1946 	DEBUG 	Uploading Texture Font fontname to graphics card
+78.1994 	DEBUG 	Upload of Texture Font fontname complete
+78.2033 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+78.2034 	EXP 	window1: recordFrameIntervals = False
+78.4255 	EXP 	window1: recordFrameIntervals = True
+78.6092 	EXP 	Screen (0) actual frame rate measured at 60.08Hz
+78.6093 	EXP 	window1: recordFrameIntervals = False
+78.6303 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.6462 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.6622 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.6784 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.6947 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7120 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7278 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7440 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7603 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7765 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+78.7769 	DEBUG 	Uploading Texture Font fontname to graphics card
+78.7777 	DEBUG 	Upload of Texture Font fontname complete
+78.9247 	INFO 	keyboard.Keyboard is using ptb backend.
+78.9248 	EXP 	Graz: status = STARTED
+79.0763 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([-0.3,  0. ]), size=array([3.2, 1.8]), texRes=128.0, units='height', win=Window(...))
+79.0820 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+79.1380 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0680 	DEBUG 	Read csv file with pandas: stims_sequence.csv
+0.0688 	DEBUG 	Clearing unnamed columns from stims_sequence.csv
+0.0692 	EXP 	Imported stims_sequence.csv as conditions, 10 conditions, 2 params
+0.0694 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+5.0808 	EXP 	attention_cross: autoDraw = True
+6.9150 	DATA 	Mouse: Left button down, pos=(402,368)
+6.9593 	DATA 	Mouse:  Left button up, pos=(402,368)
+7.0208 	DATA 	Mouse: Left button down, pos=(402,368)
+7.1258 	DATA 	Mouse:  Left button up, pos=(402,368)
+7.1368 	EXP 	attention_cross: autoDraw = False
+7.1368 	EXP 	motor_cue: image = 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png'
+7.1368 	EXP 	motor_cue: autoDraw = True
+8.3363 	EXP 	motor_cue: autoDraw = False
+8.3363 	EXP 	attempt: autoDraw = True
+8.8410 	DATA 	Mouse: Left button down, pos=(439,273)
+8.8908 	DATA 	Mouse:  Left button up, pos=(439,273)
+8.9572 	DATA 	Mouse: Left button down, pos=(439,273)
+9.0251 	DATA 	Mouse:  Left button up, pos=(439,273)
+12.0800 	EXP 	New trial (rep=0, index=1): <Trial 1 (1 in rep 0) data={'img': 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_arrow.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 1, 'thisTrialN': 1, 'thisRepN': 0}>
+12.0938 	EXP 	attempt: autoDraw = False
+12.0938 	EXP 	attention_cross: autoDraw = True
+12.9733 	DATA 	Mouse: Left button down, pos=(472,253)
+13.0498 	DATA 	Mouse:  Left button up, pos=(472,253)
+13.8477 	EXP 	Device response: <KeyPress from None: t=13.748491599923, value=escape, duration=None>
+13.8490 	DATA 	Keypress: escape
+13.8657 	EXP 	Device response: <KeyPress from None: t=13.748491599923, value=escape, duration=0.07207510014995933>
+13.8658 	EXP 	Graz: status = STOPPED
+13.8795 	EXP 	attention_cross: autoDraw = False
+13.8821 	EXP 	Graz: status = STOPPED
+13.9138 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\data\\pilot_Graz_2025-08-28_11h32.04.475.csv'
+13.9159 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\data\pilot_Graz_2025-08-28_11h32.04.475.psydat
+14.5682 	DEBUG 	Saving data for Graz ExperimentHandler
+14.5706 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

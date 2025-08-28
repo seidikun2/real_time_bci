@@ -1,8 +1,10 @@
 # graz_realtime_signal.py
+import os
 import time
 import math
 import threading
 from collections import deque
+import datetime as dt
 
 import numpy as np
 from pylsl import StreamInfo, StreamOutlet, resolve_byprop, StreamInlet, local_clock
@@ -18,24 +20,39 @@ MARKER_TYPE = "Markers"
 SIGNAL_NAME = "GrazMI_SimEEG"
 SIGNAL_TYPE = "EEG"
 
-FS = 250.0          # Hz (taxa fixa de aquisição)
-CHANNELS = 8        # número de canais
-CHUNK = 10          # amostras por bloco (latência ~ CHUNK/FS)
-NOISE_STD = 0.5     # desvio-padrão do ruído branco
+FS          = 250.0      # Hz (taxa fixa de aquisição)
+CHANNELS    = 8          # número de canais
+CHUNK       = 10         # amostras por bloco (latência ~ CHUNK/FS)
+NOISE_STD   = 0.5        # desvio-padrão do ruído branco
 
 # Padrão temporal (burst) disparado pelos marcadores
-BURST_FREQ = 10.0   # Hz
-BURST_AMP  = 1.2    # amplitude
-BURST_DUR  = 1.0    # s
-TAPER_FRAC = 0.2    # fração para janela Hann no início/final
+BURST_FREQ = 10.0        # Hz
+BURST_AMP  = 1.5         # amplitude
+BURST_DUR  = 2.5         # s
+TAPER_FRAC = 0.2         # fração para janela Hann no início/final
 
 # Ganhos por hemisfério (esq, dir) para cada mão (contralateral)
-PROFILE_LEFT_MI  = (1.0, 0.3)  # evento RIGHT_MI_STIM (mão direita) -> hemisfério esquerdo mais forte
-PROFILE_RIGHT_MI = (0.3, 1.0)  # evento LEFT_MI_STIM  (mão esquerda) -> hemisfério direito mais forte
+PROFILE_LEFT_MI  = (1.0, 0.3)  # evento RIGHT_MI_STIM (mão direita)  -> hemisfério ESQUERDO mais forte
+PROFILE_RIGHT_MI = (0.3, 1.0)  # evento LEFT_MI_STIM  (mão esquerda) -> hemisfério DIREITO  mais forte
 
 # Códigos
-CODE_LEFT_MI  = 3  # LEFT_MI_STIM
-CODE_RIGHT_MI = 4  # RIGHT_MI_STIM
+CODE_LEFT_MI   = 3  # LEFT_MI_STIM
+CODE_RIGHT_MI  = 4  # RIGHT_MI_STIM
+CODE_ATTEMPT   = 5  # <<< ALTERADO: constante explícita
+
+# Mapa de rótulos (para log legível)
+CODE_MAP = {
+    1: "BASELINE",
+    2: "ATTENTION",
+    3: "LEFT_MI_STIM",
+    4: "RIGHT_MI_STIM",
+    5: "ATTEMPT",
+    6: "REST",
+}
+
+# ===== Logs em disco =====
+LOG_DIR = r"C:\Users\User\Desktop\Dados"   # pasta de saída
+FLUSH_EVERY_N_SIGNAL_ROWS = 100            # flush periódico do CSV do sinal
 # ==========================
 
 
@@ -96,11 +113,9 @@ class PatternEvent:
 
     def add_to(self, buf: np.ndarray):
         """Soma contribuição ao buffer (chunk, C)."""
-        # quantas amostras vamos somar neste chunk
         take = min(len(self.wave) - self.i, buf.shape[0])
         if take <= 0:
             return 0
-        # outer: (take, 1) * (1, C) => (take, C)
         buf[:take, :] += np.outer(self.wave[self.i:self.i + take], self.w)
         self.i += take
         return take
@@ -109,18 +124,34 @@ class PatternEvent:
         return self.i >= len(self.wave)
 
 
-def marker_thread(inlet: StreamInlet,
-                  event_queue: deque,
-                  fs: float,
-                  dur: float,
-                  freq: float,
-                  amp: float,
-                  channels: int,
-                  profile_left: tuple,
-                  profile_right: tuple):
-    """Escuta marcadores e enfileira eventos de burst."""
+def open_csv_writers():
+    import csv
+    os.makedirs(LOG_DIR, exist_ok=True)
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    sig_path = os.path.join(LOG_DIR, f"graz_sim_signal_{stamp}.csv")
+    mrk_path = os.path.join(LOG_DIR, f"graz_sim_markers_{stamp}.csv")
+    # sinal
+    fS = open(sig_path, "w", newline="", encoding="utf-8")
+    wS = csv.writer(fS)
+    header_sig = ["iso_time", "lsl_time_s"] + [f"ch{i+1}" for i in range(CHANNELS)]
+    wS.writerow(header_sig)
+    # marcadores
+    fM = open(mrk_path, "w", newline="", encoding="utf-8")
+    wM = csv.writer(fM)
+    wM.writerow(["iso_time", "lsl_time_s", "code", "label", "local_recv_iso", "local_recv_s"])
+    print(f"Log (sinal):   {sig_path}")
+    print(f"Log (markers): {mrk_path}")
+    return fS, wS, sig_path, fM, wM, mrk_path
+
+
+def marker_thread(inlet: StreamInlet, event_queue:deque, channels:int, profile_left:tuple,
+                  profile_right: tuple, wM, lockM, unix_offset: float):
+    """Escuta marcadores e enfileira eventos apenas quando chega ATTEMPT, usando a última pista (LEFT/RIGHT)."""
     print("Listener de marcadores iniciado.")
-    wave = build_burst(fs, dur, freq, amp, TAPER_FRAC)
+    wave = build_burst(FS, BURST_DUR, BURST_FREQ, BURST_AMP, TAPER_FRAC)
+
+    last_stim = None  # <<< ALTERADO: lembra última pista ("LEFT" ou "RIGHT")
+
     while True:
         try:
             samples, timestamps = inlet.pull_chunk(timeout=0.2, max_samples=32)
@@ -133,17 +164,36 @@ def marker_thread(inlet: StreamInlet,
                 except Exception:
                     continue
 
+                # Atualiza memória com a última pista
                 if code == CODE_LEFT_MI:
-                    # LEFT_MI_STIM -> contralateral (direita mais forte)
-                    w = hemispheric_weights(channels, *profile_right)
-                    event_queue.append(PatternEvent(wave, w))
-                    print(f"[{ts:.3f}] LEFT_MI_STIM → evento (dir>esq).")
+                    last_stim = "LEFT"   # <<< ALTERADO
                 elif code == CODE_RIGHT_MI:
-                    # RIGHT_MI_STIM -> contralateral (esquerda mais forte)
-                    w = hemispheric_weights(channels, *profile_left)
-                    event_queue.append(PatternEvent(wave, w))
-                    print(f"[{ts:.3f}] RIGHT_MI_STIM → evento (esq>dir).")
-                # demais códigos ignorados
+                    last_stim = "RIGHT"  # <<< ALTERADO
+
+                # Dispara burst somente no ATTEMPT, com base na última pista
+                elif code == CODE_ATTEMPT:  # <<< ALTERADO
+                    if last_stim == "LEFT":
+                        # ATTEMPT da mão ESQUERDA -> contralateral (direita mais forte)
+                        w = hemispheric_weights(channels, *profile_right)
+                        event_queue.append(PatternEvent(wave, w))
+                        print(f"[{ts:.3f}] ATTEMPT após LEFT_MI_STIM → evento (dir>esq).")
+                    elif last_stim == "RIGHT":
+                        # ATTEMPT da mão DIREITA -> contralateral (esquerda mais forte)
+                        w = hemispheric_weights(channels, *profile_left)
+                        event_queue.append(PatternEvent(wave, w))
+                        print(f"[{ts:.3f}] ATTEMPT após RIGHT_MI_STIM → evento (esq>dir).")
+                    else:
+                        # ATTEMPT sem pista anterior: ignora ou use default (aqui: ignora)
+                        print(f"[{ts:.3f}] ATTEMPT sem pista anterior — ignorado.")
+
+                # Log do marcador (mais precisão)
+                label = CODE_MAP.get(code, "UNKNOWN")
+                local_now = time.time()
+                iso_mrk  = dt.datetime.fromtimestamp(ts + unix_offset).isoformat(timespec="microseconds")
+                local_iso = dt.datetime.fromtimestamp(local_now).isoformat(timespec="microseconds")
+                with lockM:
+                    wM.writerow([iso_mrk, f"{ts:.9f}", code, label, local_iso, f"{local_now:.9f}"])
+
         except KeyboardInterrupt:
             break
         except Exception as e:
@@ -153,26 +203,32 @@ def marker_thread(inlet: StreamInlet,
 
 def streaming_loop(outlet: StreamOutlet,
                    event_queue: deque,
-                   fs: float,
-                   channels: int,
-                   noise_std: float,
-                   chunk: int):
-    """Gera e envia o sinal em taxa fixa, somando ruído + eventos ativos."""
+                   wS, lockS,
+                   unix_offset: float):
+    """
+    Gera e envia o sinal em taxa fixa, somando ruído + eventos ativos, e salva no CSV do sinal.
+    """
     rng = np.random.default_rng()
     active = []
-    period = chunk / fs
+    period = CHUNK / FS
+
+    # timestamps estáveis: ancora no início e usa contador de amostras (float64)
+    start_lsl = local_clock()
+    n_sent = 0
     next_t = time.perf_counter()
-    print(f"Streaming iniciado: fs={fs} Hz, canais={channels}, chunk={chunk} (latência ≈ {period*1000:.1f} ms). Ctrl+C para parar.")
+
+    n_rows_since_flush = 0
+    print(f"Streaming iniciado: fs={FS} Hz, canais={CHANNELS}, chunk={CHUNK} (latência ≈ {period*1000:.1f} ms). Ctrl+C para parar.")
     while True:
         try:
-            # base: ruído branco (chunk, C)
-            buf = rng.normal(0.0, noise_std, size=(chunk, channels)).astype(np.float32)
+            # ruído base
+            buf = rng.normal(0.0, NOISE_STD, size=(CHUNK, CHANNELS)).astype(np.float32)
 
-            # mover novos eventos para 'active'
+            # adicionar novos eventos
             while event_queue:
                 active.append(event_queue.popleft())
 
-            # somar contribuições
+            # somar contribuições dos eventos ativos
             still = []
             for ev in active:
                 ev.add_to(buf)
@@ -180,16 +236,36 @@ def streaming_loop(outlet: StreamOutlet,
                     still.append(ev)
             active = still
 
-            # enviar
-            outlet.push_chunk(buf.tolist())
+            # timestamps LSL por amostra (alta resolução)
+            idx = n_sent + np.arange(CHUNK, dtype=np.float64)
+            ts_vec = start_lsl + (idx / FS)
+            n_sent += CHUNK
 
-            # agendamento com taxa fixa
+            # envia chunk com timestamps
+            outlet.push_chunk(buf.tolist(), ts_vec.tolist())
+
+            # log do sinal
+            rows = []
+            for i in range(CHUNK):
+                iso = dt.datetime.fromtimestamp(ts_vec[i] + unix_offset).isoformat(timespec="microseconds")
+                row = [iso, f"{ts_vec[i]:.9f}"] + [f"{float(v):.6f}" for v in buf[i, :]]
+                rows.append(row)
+            with lockS:
+                wS.writerows(rows)
+            n_rows_since_flush += CHUNK
+            if n_rows_since_flush >= FLUSH_EVERY_N_SIGNAL_ROWS:
+                try:
+                    wS.writerow([])
+                except Exception:
+                    pass
+                n_rows_since_flush = 0
+
+            # agendamento com taxa fixa (perf_counter)
             next_t += period
             dt_sleep = next_t - time.perf_counter()
             if dt_sleep > 0:
                 time.sleep(dt_sleep)
             else:
-                # atrasou; realinhar para evitar drift
                 next_t = time.perf_counter()
         except KeyboardInterrupt:
             break
@@ -206,21 +282,34 @@ def main():
     # Inlet dos marcadores (bloqueia até encontrar)
     inlet = resolve_marker_inlet(MARKER_NAME, MARKER_TYPE)
 
+    # Conversão LSL -> Unix (aprox.): Unix ≈ LSL + offset
+    unix_offset = time.time() - local_clock()
+
+    # Abertura de CSVs
+    fS, wS, sig_path, fM, wM, mrk_path = open_csv_writers()
+    lockS = threading.Lock()
+    lockM = threading.Lock()
+
     # Fila de eventos
     event_queue = deque()
 
-    # Thread do listener de marcadores
+    # Thread do listener de marcadores (gera eventos + loga)
     t = threading.Thread(
         target=marker_thread,
-        args=(inlet, event_queue, FS, BURST_DUR, BURST_FREQ, BURST_AMP, CHANNELS, PROFILE_LEFT_MI, PROFILE_RIGHT_MI),
+        args=(inlet, event_queue, CHANNELS, PROFILE_LEFT_MI, PROFILE_RIGHT_MI, wM, lockM, unix_offset),
         daemon=True
     )
     t.start()
 
     try:
-        streaming_loop(outlet, event_queue, FS, CHANNELS, NOISE_STD, CHUNK)
+        streaming_loop(outlet, event_queue, wS, lockS, unix_offset)
     finally:
-        print("Encerrando.")
+        print("\nEncerrando.")
+        try: fS.close()
+        except Exception: pass
+        try: fM.close()
+        except Exception: pass
+        print(f"Arquivos salvos:\n - {sig_path}\n - {mrk_path}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,67 @@
+9.2962 	DEBUG 	Fullscreen settings ignored as running in pilot mode.
+9.2971 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+10.2528 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+10.2528 	INFO 	OpenGL version supported by driver is 4..
+10.3127 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000150F6A79B80>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000150F6A79FD0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=False, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x00000150F66EC6A0>, multiSample=False, name='window1', numSamples=2, pos=[50.0, 420.0], screen=0, size=array([800, 600]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+10.3127 	EXP 	window1: backgroundImage = ''
+10.3127 	EXP 	window1: backgroundFit = 'none'
+10.3483 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.3639 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.3796 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.3956 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4114 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4267 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4425 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4596 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4752 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.4905 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5065 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5225 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5382 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5543 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5700 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.5857 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6015 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6172 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6326 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6487 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6642 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.6646 	DEBUG 	Uploading Texture Font fontname to graphics card
+10.6754 	DEBUG 	Upload of Texture Font fontname complete
+10.6987 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.7148 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.7306 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+10.7309 	DEBUG 	Uploading Texture Font fontname to graphics card
+10.7345 	DEBUG 	Upload of Texture Font fontname complete
+10.7370 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+10.7370 	EXP 	window1: recordFrameIntervals = False
+10.9611 	EXP 	window1: recordFrameIntervals = True
+11.4619 	EXP 	Screen (0) actual frame rate measured at 59.87Hz
+11.4619 	EXP 	window1: recordFrameIntervals = False
+11.4826 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.4983 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5142 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5302 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5461 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5623 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5780 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.5938 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.6098 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.6256 	DEBUG 	TextBox2 loaded 1 chars with 0 blanks and 1 valid
+11.6260 	DEBUG 	Uploading Texture Font fontname to graphics card
+11.6267 	DEBUG 	Upload of Texture Font fontname complete
+11.7857 	INFO 	keyboard.Keyboard is using ptb backend.
+11.7857 	EXP 	Graz: status = STARTED
+11.9472 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([-0.3,  0. ]), size=array([3.2, 1.8]), texRes=128.0, units='height', win=Window(...))
+11.9532 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+12.0077 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0707 	DEBUG 	Read csv file with pandas: stims_sequence.csv
+0.0720 	DEBUG 	Clearing unnamed columns from stims_sequence.csv
+0.0723 	EXP 	Imported stims_sequence.csv as conditions, 10 conditions, 2 params
+0.0739 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'C:\\Users\\User\\Desktop\\Graz MI Psychopy\\stims\\left_arrow.jpg', 'event_label': 'LEFT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+5.0818 	EXP 	attention_cross: autoDraw = True
+7.0887 	ERROR 	Couldn't find image C:\Users\User\Desktop\Graz MI Psychopy\stims\left_arrow.jpg; check path? (tried: C:\Users\User\Desktop\Graz MI Psychopy\stims\left_arrow.jpg)
+7.1240 	DEBUG 	Saving data for Graz ExperimentHandler
+7.1257 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\data\pilot_Graz_2025-08-28_10h50.51.154.psydat
+7.1265 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\data\\pilot_Graz_2025-08-28_10h50.51.154.csv'
+7.1326 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.
