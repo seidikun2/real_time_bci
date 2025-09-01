@@ -1,0 +1,4 @@
+﻿img,event_label,thisN,thisTrialN,thisRepN,trials.thisRepN,trials.thisTrialN,trials.thisN,trials.thisIndex,thisRow.t,notes,Start_LSL.started,Start_LSL.stopped,Baseline.started,Baseline.stopped,Attention.started,BASELINE_code,BASELINE_tGlob,BASELINE_tLSL,ATTENTION_code,ATTENTION_tGlob,ATTENTION_tLSL,attention_cross.started,participant,session,date,expName,expVersion,psychopyVersion,frameRate,expStart,
+,,,,,,,,,,,0.06709009999985938,0.06715799999983574,,,,,,,,,,,193633,001,2025-08-31_19h32.00.658,Graz,,2025.1.1,59.86697558020189,2025-08-31 19h32.12.988126 -0300,
+,,,,,,,,,,,,,0.06718769999997676,0.06722360000003391,,,,,,,,,193633,001,2025-08-31_19h32.00.658,Graz,,2025.1.1,59.86697558020189,2025-08-31 19h32.12.988126 -0300,
+C:\Users\User\Documents\GitHub\real_time_bci\stims\right_arrow.png,RIGHT_MI_STIM,0,0,0,0,0,0,9,0.07324429999971471,,,,,,0.07127730000001975,1,0.07325459999992745,2223.8592758,2,0.07328819999975167,2223.859307,5.077208899999732,,,,,,,,,

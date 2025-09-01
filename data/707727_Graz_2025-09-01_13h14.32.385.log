@@ -1,0 +1,36 @@
+62.2551 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+62.4131 	WARNING 	User requested fullscreen with size [1024  768], but screen is actually [900, 1440]. Using actual size
+63.5875 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+63.5875 	INFO 	OpenGL version supported by driver is 4..
+63.7510 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x000001FEB31CCB80>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x000001FEB31CCFD0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=True, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x000001FEB35BF760>, multiSample=False, name='window1', numSamples=2, pos=[0.0, 0.0], screen=0, size=array([ 900, 1440]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+63.7510 	EXP 	window1: backgroundImage = ''
+63.7510 	EXP 	window1: backgroundFit = 'none'
+64.2391 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+64.2391 	EXP 	window1: recordFrameIntervals = False
+64.4057 	EXP 	window1: recordFrameIntervals = True
+64.5890 	EXP 	Screen (0) actual frame rate measured at 60.09Hz
+64.5891 	EXP 	window1: recordFrameIntervals = False
+64.7433 	INFO 	keyboard.Keyboard is using ptb backend.
+64.7433 	EXP 	Graz: status = STARTED
+64.9964 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([-0.3,  0. ]), size=array([1.33333333, 0.75      ]), texRes=128.0, units='height', win=Window(...))
+65.0089 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+65.0635 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0074 	EXP 	Imported stims_sequence.csv as conditions, 10 conditions, 2 params
+0.0129 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+5.0182 	EXP 	attention_cross: autoDraw = True
+7.1157 	EXP 	attention_cross: autoDraw = False
+7.1157 	EXP 	motor_cue: image = 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png'
+7.1157 	EXP 	motor_cue: autoDraw = True
+8.2748 	EXP 	motor_cue: autoDraw = False
+8.2748 	EXP 	attempt: autoDraw = True
+8.4768 	DATA 	Mouse: Left button down, pos=(676,568)
+8.5766 	DATA 	Mouse:  Left button up, pos=(676,568)
+8.9584 	EXP 	Device response: <KeyPress from None: t=8.871630900001037, value=escape, duration=None>
+8.9598 	DATA 	Keypress: escape
+8.9627 	EXP 	Device response: <KeyPress from None: t=8.871630900001037, value=escape, duration=0.06376109999837354>
+8.9627 	EXP 	Graz: status = STOPPED
+8.9758 	EXP 	attempt: autoDraw = False
+8.9759 	EXP 	Graz: status = STOPPED
+9.0037 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\data\\707727_Graz_2025-09-01_13h14.32.385.csv'
+9.0082 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\data\707727_Graz_2025-09-01_13h14.32.385.psydat
+9.1799 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

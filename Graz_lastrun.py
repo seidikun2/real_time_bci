@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2025.1.1),
-    on agosto 28, 2025, at 17:43
+    on setembro 01, 2025, at 17:08
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -665,7 +665,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # set up handler to look after randomisation of conditions etc
     trials = data.TrialHandler2(
         name='trials',
-        nReps=1.0, 
+        nReps=2.0, 
         method='random', 
         extraInfo=expInfo, 
         originPath=-1, 
@@ -1181,7 +1181,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             trials.status = STARTED
         thisExp.nextEntry()
         
-    # completed 1.0 repeats of 'trials'
+    # completed 2.0 repeats of 'trials'
     trials.status = FINISHED
     
     if thisSession is not None:

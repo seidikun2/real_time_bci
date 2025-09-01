@@ -6,7 +6,7 @@ import datetime as dt
 
 # ======== CONFIG RÁPIDA ========
 DATA_DIR      = r"C:\Users\User\Desktop\Dados"
-MARKERS_FILE  = DATA_DIR + r'\graz_sim_markers_20250828_174406.csv'                 # None => pega o mais recente (*markers_*.csv)
+MARKERS_FILE  = None #DATA_DIR + r'\graz_sim_markers_20250828_174406.csv'                 # None => pega o mais recente (*markers_*.csv)
 SIGNAL_FILE   = None #DATA_DIR + r'\graz_sim_signal_20250828_161404.csv'                 # None => pega o mais recente (*signal_*.csv)
 
 # Classes mostradas nas linhas de subplots (derivadas do cue anterior ao ATTEMPT)
