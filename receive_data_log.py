@@ -8,7 +8,7 @@ from pylsl import resolve_byprop, StreamInlet, local_clock
 # --- Streams de entrada ---
 STREAM_NAME = "GrazMI_Markers"
 STREAM_TYPE = "Markers"
-SIGNAL_NAME = "GrazMI_SimEEG"
+SIGNAL_NAME = "Cognionics Wireless EEG"
 SIGNAL_TYPE = "EEG"
 
 # --- Códigos (Graz) ---
@@ -22,7 +22,7 @@ CODE_MAP = {
 }
 
 # --- Saída (Windows) ---
-LOG_DIR = r"C:\Users\User\Desktop\Dados"
+LOG_DIR = r"C:\Users\Unifesp\Desktop\Dados Seidi"
 
 def resolve_stream(name: str, stype: str, timeout: float = 4.0):
     """Resolve por name e, se falhar, por type."""

@@ -32,8 +32,8 @@ from pyriemann.tangentspace import tangent_space
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_clock
 
 # ===================== Configs padrão =====================
-DEFAULT_OUT_DIR       = r"C:\Users\User\Desktop\Dados"
-DEFAULT_SIGNAL_NAME   = "GrazMI_SimEEG"
+DEFAULT_OUT_DIR       = r"C:\Users\Unifesp\Desktop\Dados Seidi"
+DEFAULT_SIGNAL_NAME   = "Cognionics Wireless EEG"
 # ==========================================================
 
 def log(msg: str):

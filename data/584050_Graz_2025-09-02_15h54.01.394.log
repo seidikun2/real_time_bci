@@ -1,0 +1,24 @@
+9.0981 	INFO 	Loaded monitor calibration from ['2025_09_02 15:52']
+9.1498 	WARNING 	User requested fullscreen with size [1024  768], but screen is actually [1920, 1080]. Using actual size
+9.5283 	INFO 	Using renderer 'NVIDIA GeForce GTX 1080/PCIe/SSE2' for graphics
+9.5283 	INFO 	OpenGL version supported by driver is 4..
+9.7862 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000185BDEC0CA0>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000185BDEC0D00>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=True, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x00000185BD4752D0>, multiSample=False, name='window1', numSamples=2, pos=[np.float64(0.0), np.float64(0.0)], screen=0, size=array([1920, 1080]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+9.7863 	EXP 	window1: backgroundImage = ''
+9.7864 	EXP 	window1: backgroundFit = 'none'
+10.2891 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+10.2892 	EXP 	window1: recordFrameIntervals = False
+10.3427 	EXP 	window1: recordFrameIntervals = True
+10.3765 	EXP 	Screen (0) actual frame rate measured at 331.65Hz
+10.3765 	EXP 	window1: recordFrameIntervals = False
+10.4854 	INFO 	keyboard.Keyboard is using ptb backend.
+10.4855 	EXP 	Graz: status = STARTED
+10.7564 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=np.False_, flipVert=np.False_, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([-0.3,  0. ]), size=array([1.77777778, 1.        ]), texRes=128.0, units='height', win=Window(...))
+10.7741 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=np.False_, flipVert=np.False_, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+10.8420 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=np.False_, flipVert=np.False_, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0664 	EXP 	Imported stims_sequence.csv as conditions, 10 conditions, 2 params
+0.0666 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_arrow.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+5.2972 	EXP 	attention_cross: autoDraw = True
+7.1565 	ERROR 	Couldn't find image C:\Users\User\Documents\GitHub\real_time_bci\stims\right_arrow.png; check path? (tried: C:\Users\User\Documents\GitHub\real_time_bci\stims\right_arrow.png)
+7.2189 	INFO 	saved data to D:\Documentos\GitHub\real_time_bci\data\584050_Graz_2025-09-02_15h54.01.394.psydat
+7.2395 	INFO 	saved data to 'D:\\Documentos\\GitHub\\real_time_bci\\data\\584050_Graz_2025-09-02_15h54.01.394.csv'
+7.2410 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

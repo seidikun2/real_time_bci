@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import datetime as dt
 
 # ======== CONFIG RÁPIDA ========
-DATA_DIR      = r"C:\Users\User\Desktop\Dados"
+DATA_DIR      = r"C:\Users\Unifesp\Desktop\Dados Seidi"
 MARKERS_FILE  = None #DATA_DIR + r'\graz_sim_markers_20250828_174406.csv'                 # None => pega o mais recente (*markers_*.csv)
 SIGNAL_FILE   = None #DATA_DIR + r'\graz_sim_signal_20250828_161404.csv'                 # None => pega o mais recente (*signal_*.csv)
 

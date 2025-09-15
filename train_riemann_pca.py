@@ -360,7 +360,7 @@ def main():
     ap = argparse.ArgumentParser(
         description="Treino Riemann/PCA/SVM a partir de logs (sinal+marcadores) do Graz — 2 classes (LEFT/RIGHT), alinhado ao ATTEMPT."
     )
-    ap.add_argument("--dir", "-d", default=r"C:\Users\User\Desktop\Dados", help="Pasta com os CSVs.")
+    ap.add_argument("--dir", "-d", default=r"C:\Users\Unifesp\Desktop\Dados Seidi", help="Pasta com os CSVs.")
     ap.add_argument("--markers", "-m", default=None, help="CSV de marcadores (graz_*markers_*.csv). Se None, pega o mais recente.")
     ap.add_argument("--signal", "-s", default=None, help="CSV de sinal (graz_*signal_*.csv). Se None, pega o mais recente.")
     ap.add_argument("--epoch", type=float, default=2.0, help="Tamanho da janela (s).")

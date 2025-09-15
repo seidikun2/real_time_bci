@@ -51,7 +51,7 @@ CODE_MAP = {
 }
 
 # ===== Logs em disco =====
-LOG_DIR = r"C:\Users\User\Desktop\Dados"   # pasta de saída
+LOG_DIR = r"C:\Users\Unifesp\Desktop\Dados Seidi"   # pasta de saída
 FLUSH_EVERY_N_SIGNAL_ROWS = 100            # flush periódico do CSV do sinal
 # ==========================
 

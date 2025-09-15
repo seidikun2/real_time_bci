@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2025.1.1),
-    on setembro 01, 2025, at 17:08
+    on setembro 08, 2025, at 17:28
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -63,8 +63,8 @@ or run the experiment with `--pilot` as an argument. To change what pilot
 # work out from system args whether we are running in pilot mode
 PILOTING = core.setPilotModeFromArgs()
 # start off with values from experiment settings
-_fullScr = True
-_winSize = (1024, 768)
+_fullScr = False
+_winSize = [640, 360]
 # if in pilot mode, apply overrides according to preferences
 if PILOTING:
     # force windowed mode
@@ -133,7 +133,7 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version=expVersion,
         extraInfo=expInfo, runtimeInfo=None,
-        originPath='C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\Graz_lastrun.py',
+        originPath='D:\\Documentos\\GitHub\\real_time_bci\\Graz_lastrun.py',
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
@@ -194,15 +194,12 @@ def setupWindow(expInfo=None, win=None):
     psychopy.visual.Window
         Window in which to run this experiment.
     """
-    if PILOTING:
-        logging.debug('Fullscreen settings ignored as running in pilot mode.')
-    
     if win is None:
         # if not given a window to setup, make one
         win = visual.Window(
             size=_winSize, fullscr=_fullScr, screen=0,
-            winType='pyglet', allowGUI=False, allowStencil=False,
-            monitor='testMonitor', color=[0,0,0], colorSpace='rgb',
+            winType='pyglet', allowGUI=True, allowStencil=False,
+            monitor='testMonitor', color=[1.0000, 0.9843, 0.7412], colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=True,
             units='height',
@@ -210,7 +207,7 @@ def setupWindow(expInfo=None, win=None):
         )
     else:
         # if we have a window, just set the attributes which are safe to set
-        win.color = [0,0,0]
+        win.color = [1.0000, 0.9843, 0.7412]
         win.colorSpace = 'rgb'
         win.backgroundImage = ''
         win.backgroundFit = 'none'
@@ -457,6 +454,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         texRes=128.0, interpolate=True, depth=0.0)
     
     # --- Initialize components for Routine "Rest" ---
+    image_2 = visual.ImageStim(
+        win=win,
+        name='image_2', 
+        image='stims/rest.png', mask=None, anchor='center',
+        ori=0.0, pos=(0, 0), draggable=False, size=(0.5, 0.5),
+        color=[1,1,1], colorSpace='rgb', opacity=None,
+        flipHoriz=False, flipVert=False,
+        texRes=128.0, interpolate=True, depth=-1.0)
     
     # create some handy timers
     
@@ -585,7 +590,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     Baseline.tStart = globalClock.getTime(format='float')
     Baseline.status = STARTED
     thisExp.addData('Baseline.started', Baseline.tStart)
-    Baseline.maxDuration = 5
+    Baseline.maxDuration = 3
     # keep track of which components have finished
     BaselineComponents = Baseline.components
     for thisComponent in Baseline.components:
@@ -602,7 +607,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     # --- Run Routine "Baseline" ---
     Baseline.forceEnded = routineForceEnded = not continueRoutine
-    while continueRoutine and routineTimer.getTime() < 5.0:
+    while continueRoutine and routineTimer.getTime() < 3.0:
         # get current time
         t = routineTimer.getTime()
         tThisFlip = win.getFutureFlipTime(clock=routineTimer)
@@ -659,13 +664,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     elif Baseline.forceEnded:
         routineTimer.reset()
     else:
-        routineTimer.addTime(-5.000000)
+        routineTimer.addTime(-3.000000)
     thisExp.nextEntry()
     
     # set up handler to look after randomisation of conditions etc
     trials = data.TrialHandler2(
         name='trials',
-        nReps=2.0, 
+        nReps=4.0, 
         method='random', 
         extraInfo=expInfo, 
         originPath=-1, 
@@ -1084,7 +1089,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # create an object to store info about Routine Rest
         Rest = data.Routine(
             name='Rest',
-            components=[],
+            components=[image_2],
         )
         Rest.status = NOT_STARTED
         continueRoutine = True
@@ -1114,7 +1119,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         
         # --- Run Routine "Rest" ---
         Rest.forceEnded = routineForceEnded = not continueRoutine
-        while continueRoutine:
+        while continueRoutine and routineTimer.getTime() < 2.0:
             # if trial has changed, end Routine now
             if hasattr(thisTrial, 'status') and thisTrial.status == STOPPING:
                 continueRoutine = False
@@ -1124,6 +1129,40 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             tThisFlipGlobal = win.getFutureFlipTime(clock=None)
             frameN = frameN + 1  # number of completed frames (so 0 is the first frame)
             # update/draw components on each frame
+            
+            # *image_2* updates
+            
+            # if image_2 is starting this frame...
+            if image_2.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
+                # keep track of start time/frame for later
+                image_2.frameNStart = frameN  # exact frame index
+                image_2.tStart = t  # local t and not account for scr refresh
+                image_2.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(image_2, 'tStartRefresh')  # time at next scr refresh
+                # add timestamp to datafile
+                thisExp.timestampOnFlip(win, 'image_2.started')
+                # update status
+                image_2.status = STARTED
+                image_2.setAutoDraw(True)
+            
+            # if image_2 is active this frame...
+            if image_2.status == STARTED:
+                # update params
+                pass
+            
+            # if image_2 is stopping this frame...
+            if image_2.status == STARTED:
+                # is it time to stop? (based on global clock, using actual start)
+                if tThisFlipGlobal > image_2.tStartRefresh + 2-frameTolerance:
+                    # keep track of stop time/frame for later
+                    image_2.tStop = t  # not accounting for scr refresh
+                    image_2.tStopRefresh = tThisFlipGlobal  # on global time
+                    image_2.frameNStop = frameN  # exact frame index
+                    # add timestamp to datafile
+                    thisExp.timestampOnFlip(win, 'image_2.stopped')
+                    # update status
+                    image_2.status = FINISHED
+                    image_2.setAutoDraw(False)
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
@@ -1164,8 +1203,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         Rest.tStop = globalClock.getTime(format='float')
         Rest.tStopRefresh = tThisFlipGlobal
         thisExp.addData('Rest.stopped', Rest.tStop)
-        # the Routine "Rest" was not non-slip safe, so reset the non-slip timer
-        routineTimer.reset()
+        # using non-slip timing so subtract the expected duration of this Routine (unless ended on request)
+        if Rest.maxDurationReached:
+            routineTimer.addTime(-Rest.maxDuration)
+        elif Rest.forceEnded:
+            routineTimer.reset()
+        else:
+            routineTimer.addTime(-2.000000)
         # mark thisTrial as finished
         if hasattr(thisTrial, 'status'):
             thisTrial.status = FINISHED
@@ -1181,7 +1225,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             trials.status = STARTED
         thisExp.nextEntry()
         
-    # completed 2.0 repeats of 'trials'
+    # completed 4.0 repeats of 'trials'
     trials.status = FINISHED
     
     if thisSession is not None:
