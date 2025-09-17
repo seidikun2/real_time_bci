@@ -180,7 +180,7 @@ def epoch_trials_from_attempts(t_sig: np.ndarray, X: np.ndarray, attempts_by_cls
 
     if not trial_windows:
         raise ValueError("Nenhuma janela gerada. Verifique se há ATTEMPT e pistas LEFT/RIGHT.")
-
+    print(len(trial_windows))
     Xw = np.stack([X[idx, :] for idx in trial_windows], axis=0)  # (N, T, C)
     Xw = np.swapaxes(Xw, 1, 2)  # (N, C, T)
 
@@ -282,7 +282,7 @@ def train_from_logs(markers_csv: str, signal_csv: str, out_prefix: Optional[str]
 
     _log(f"lendo sinal: {signal_csv}")
     t_sig, X_raw, ch_names = read_signal_csv(signal_csv)
-    fs = estimate_fs(t_sig)
+    fs = 1000 #estimate_fs(t_sig)
     if fs <= 0:
         raise RuntimeError("Não foi possível estimar Fs a partir do CSV do sinal.")
     _log(f"Fs estimada: {fs:.2f} Hz | shape(bruto)={X_raw.shape} | canais={len(ch_names)}")

@@ -236,6 +236,7 @@ def run(signal_name: str,
                     # --- saída do modelo ---
                     if has_proba:
                         proba = clf.predict_proba(feat.reshape(1, -1))[0]   # (2,)
+                        print(proba)
                         classes = list(getattr(clf, "classes_", []))
                         # mapeia classes -> (left,right)
                         if (left_label in classes) and (right_label in classes):
