@@ -1,27 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-graz_realtime_decoder.py
-Decodificador em tempo real para MI (Graz), com saída LSL (3 canais):
-  [left, both(=0), right]
-
-Envio LSL com taxa configurável (--lsl_rate, ex.: 30 Hz):
-- O pipeline calcula inferências no passo definido por --step.
-- O envio LSL é desacoplado: só envia na frequência pedida e SEMPRE usa a
-  classificação mais recente (descarta frames atrasados para não entupir).
-
-Saída do modelo:
-- Se o classificador tiver predict_proba (binário): usa probabilidades (0..1).
-- Caso contrário: usa decision_function, clipe em [-1,1] e envia valor negativo no left,
-  positivo no right (ambos em "a.u."), como no seu exemplo.
-"""
-
 import os
 import re
 import csv
 import glob
 import time
 import pickle
-import argparse
 import datetime as dt
 from collections import deque
 
@@ -31,10 +13,19 @@ from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import tangent_space
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_clock
 
-# ===================== Configs padrão =====================
-DEFAULT_OUT_DIR       = r"C:\Users\Unifesp\Desktop\Dados Seidi"
-DEFAULT_SIGNAL_NAME   = "Cognionics Wireless EEG"
-# ==========================================================
+# ===================== CONFIG (editar no Spyder) =====================
+OUT_DIR             = r"C:\Users\Unifesp\Desktop\Dados Seidi"         # pasta para salvar o CSV
+SIGNAL_NAME         = "Cognionics Wireless EEG"                       # nome do stream LSL de EEG
+MODEL_PREFIX        = None                                            # prefixo completo dos artefatos OU None
+EPOCH_S             = 2.0                                             # janela (s)
+STEP_S              = 0.05                                            # passo entre inferências (s)
+BAND_HZ             = (8.0, 30.0)                                     # bandpass (Hz)
+FILTER_ORDER        = 4                                               # ordem do filtro
+OUTLET_NAME         = "Signal"                                        # nome do stream LSL de saída
+LSL_RATE_HZ         = 30.0                                            # 0 => enviar a cada inferência
+LEFT_LABEL          = None                                            # rótulo explícito da classe LEFT (se usar proba)
+RIGHT_LABEL         = None                                            # rótulo explícito da classe RIGHT (se usar proba)
+# ====================================================================
 
 def log(msg: str):
     print(f"[decoder] {msg}")
@@ -94,9 +85,12 @@ def load_artifacts(prefix_or_dir: str):
         if not os.path.exists(p):
             raise FileNotFoundError(f"Artefato não encontrado: {p}")
 
-    with open(cmean_p, "rb") as f: cmean = pickle.load(f)
-    with open(pca_p,   "rb") as f: pca   = pickle.load(f)
-    with open(clf_p,   "rb") as f: clf   = pickle.load(f)
+    with open(cmean_p, "rb") as f:
+        cmean = pickle.load(f)
+    with open(pca_p, "rb") as f:
+        pca = pickle.load(f)
+    with open(clf_p, "rb") as f:
+        clf = pickle.load(f)
 
     log("Artefatos carregados:")
     log(f"  cmean : {cmean_p}")
@@ -139,17 +133,9 @@ def open_csv_logger(out_dir: str):
     return f, w, path
 
 # ------------------------ Loop principal ------------------------
-def run(signal_name: str,
-        model_prefix_or_dir: str,
-        out_dir: str,
-        epoch_s: float,
-        step_s: float,
-        band,
-        order: int,
-        outlet_name: str,
-        lsl_rate: float,
-        left_label=None,
-        right_label=None):
+def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float,
+        step_s: float, band, order: int, outlet_name: str, lsl_rate: float,
+        left_label=None, right_label=None):
 
     # Conecta ao sinal
     inlet = resolve_signal_inlet(name=signal_name, stype="EEG")
@@ -172,7 +158,7 @@ def run(signal_name: str,
     win_n = int(round(epoch_s * fs))
     hop_n = int(round(step_s * fs))
     if hop_n <= 0 or win_n <= max(8, 2*order):
-        raise ValueError("Parâmetros de janela/step inválidos (aumente --epoch e/ou --step).")
+        raise ValueError("Parâmetros de janela/step inválidos (aumente epoch/step).")
     log(f"Janela={win_n} amostras ({epoch_s:.2f}s), Step={hop_n} amostras ({step_s:.2f}s)")
 
     # Buffers
@@ -238,8 +224,8 @@ def run(signal_name: str,
                         proba = clf.predict_proba(feat.reshape(1, -1))[0]   # (2,)
                         classes = list(getattr(clf, "classes_", []))
                         # mapeia classes -> (left,right)
-                        if (left_label in classes) and (right_label in classes):
-                            li, ri = classes.index(left_label), classes.index(right_label)
+                        if (LEFT_LABEL in classes) and (RIGHT_LABEL in classes):
+                            li, ri = classes.index(LEFT_LABEL), classes.index(RIGHT_LABEL)
                             left, right = float(proba[li]), float(proba[ri])
                         else:
                             u = [str(c).upper() for c in classes]
@@ -289,53 +275,32 @@ def run(signal_name: str,
     except KeyboardInterrupt:
         log("Interrompido pelo usuário.")
     finally:
-        try: fcsv.close()
-        except Exception: pass
+        try:
+            fcsv.close()
+        except Exception:
+            pass
         log(f"Arquivo salvo: {csv_path}")
 
-def main():
-    ap = argparse.ArgumentParser(
-        description=("Decodificador MI (Graz) em tempo real. "
-                     "Saída LSL 3c (left, both=0, right). "
-                     "Envio desacoplado por --lsl_rate usando a última classificação (drop de frames).")
-    )
-    ap.add_argument("--signal_name", default=DEFAULT_SIGNAL_NAME, help="Nome do stream LSL do EEG (ex.: 'GrazMI_SimEEG').")
-    ap.add_argument("--model_prefix", default=None,
-                    help=("Prefixo dos arquivos do modelo (ex: C:\\..\\graz_model_PREFIX) "
-                          "ou pasta contendo *_classifier.pkl/_dim_red.pkl/_best_c_mean.pkl. "
-                          "Se None, busca o mais recente em --out_dir."))
-    ap.add_argument("--out_dir", default=DEFAULT_OUT_DIR, help="Pasta para salvar o CSV.")
-    ap.add_argument("--epoch", type=float, default=2.0, help="Janela (s).")
-    ap.add_argument("--step",  type=float, default=0.05, help="Passo entre inferências (s).")
-    ap.add_argument("--band",  type=float, nargs=2, default=(8.0, 30.0), help="Bandpass (low high) em Hz.")
-    ap.add_argument("--order", type=int, default=4, help="Ordem do filtro Butter.")
-    ap.add_argument("--outlet_name", default="Signal", help="Nome do stream LSL de saída.")
-    ap.add_argument("--lsl_rate", type=float, default=30.0,
-                    help="Frequência de envio LSL em Hz. Use 0 para 'enviar a cada inferência'.")
-    ap.add_argument("--left_label", default=None, help="Rótulo da classe LEFT (se usar predict_proba).")
-    ap.add_argument("--right_label", default=None, help="Rótulo da classe RIGHT (se usar predict_proba).")
-    args = ap.parse_args()
 
-    # Resolve modelo (prefixo ou diretório). Se None, pega o mais recente em out_dir.
-    model_arg = args.model_prefix
+# ===================== Execução direta no Spyder =====================
+if __name__ == "__main__":
+    # Resolve modelo (prefixo ou diretório). Se None, pega o mais recente em OUT_DIR.
+    model_arg = MODEL_PREFIX
     if model_arg is None:
-        cands = glob.glob(os.path.join(args.out_dir, "*_classifier.pkl"))
+        cands = glob.glob(os.path.join(OUT_DIR, "*_classifier.pkl"))
         if not cands:
-            raise FileNotFoundError("Não encontrei *_classifier.pkl em --out_dir. Informe --model_prefix.")
+            raise FileNotFoundError("Não encontrei *_classifier.pkl em OUT_DIR. Defina MODEL_PREFIX.")
         clf_p = max(cands, key=os.path.getmtime)
         model_arg = re.sub(r"_classifier\.pkl$", "", clf_p)
 
-    run(signal_name=args.signal_name,
+    run(signal_name=SIGNAL_NAME,
         model_prefix_or_dir=model_arg,
-        out_dir=args.out_dir,
-        epoch_s=args.epoch,
-        step_s=args.step,
-        band=tuple(args.band),
-        order=args.order,
-        outlet_name=args.outlet_name,
-        lsl_rate=args.lsl_rate,
-        left_label=args.left_label,
-        right_label=args.right_label)
-
-if __name__ == "__main__":
-    main()
+        out_dir=OUT_DIR,
+        epoch_s=EPOCH_S,
+        step_s=STEP_S,
+        band=BAND_HZ,
+        order=FILTER_ORDER,
+        outlet_name=OUTLET_NAME,
+        lsl_rate=LSL_RATE_HZ,
+        left_label=LEFT_LABEL,
+        right_label=RIGHT_LABEL)
