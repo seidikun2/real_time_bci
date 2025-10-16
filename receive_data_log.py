@@ -6,13 +6,13 @@ import datetime as     dt
 from   pylsl    import resolve_byprop, StreamInlet, local_clock
 
 # --- Streams de entrada ---
-STREAM_NAME = "GrazMI_Markers"          # Marcações do Psychopy
-STREAM_TYPE = "Markers"
-SIGNAL_NAME = "Cognionics Wireless EEG" # Sinal que chega
-SIGNAL_TYPE = "EEG"
+STREAM_NAME        = "GrazMI_Markers"          # Marcações do Psychopy
+STREAM_TYPE        = "Markers"
+SIGNAL_NAME        = "Cognionics Wireless EEG" # "GrazMI_SimEEG"   # Sinal que chega
+SIGNAL_TYPE        = "EEG"
 
 # --- Códigos (Graz) ---
-CODE_MAP = {
+CODE_MAP           = {
     1: "BASELINE",
     2: "ATTENTION",
     3: "LEFT_MI_STIM",
@@ -74,7 +74,6 @@ def main():
     last_info      = time.time()
     n_mark         = 0
     n_sig          = 0
-
     try:
         while True:
             # --- Marcadores ---
