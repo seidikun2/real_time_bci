@@ -1,0 +1,31 @@
+8.2949 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+9.6539 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+9.6539 	INFO 	OpenGL version supported by driver is 4..
+9.7177 	EXP 	Created window1 = Window(allowGUI=True, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000021D6CC4CB80>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000021D6CC4CFD0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([1.    , 0.9843, 0.7412]), colorSpace='rgb', depthBits=8, fullscr=False, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x0000021D6CD0C610>, multiSample=False, name='window1', numSamples=2, pos=[130.0, 540.0], screen=0, size=array([640, 360]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+9.7177 	EXP 	window1: backgroundImage = ''
+9.7177 	EXP 	window1: backgroundFit = 'none'
+10.1488 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+10.1488 	EXP 	window1: recordFrameIntervals = False
+11.3417 	EXP 	window1: recordFrameIntervals = True
+11.4922 	WARNING 	t of last frame was 20.00ms (=1/49)
+11.6930 	WARNING 	t of last frame was 20.47ms (=1/48)
+11.7590 	WARNING 	t of last frame was 20.19ms (=1/49)
+11.9596 	WARNING 	t of last frame was 20.19ms (=1/49)
+12.2963 	WARNING 	Multiple dropped frames have occurred - I'll stop bothering you about them!
+13.0102 	WARNING 	Couldn't measure a consistent frame rate!
+  - Is your graphics card set to sync to vertical blank?
+  - Are you running other processes on your computer?
+
+13.1406 	INFO 	keyboard.Keyboard is using ptb backend.
+13.1407 	EXP 	Graz: status = STARTED
+13.3162 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+13.3245 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+13.3803 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+13.4444 	EXP 	Created image_2 = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-1.0, draggable=False, flipHoriz=False, flipVert=False, image='stims/rest.png', interpolate=True, mask=None, maskParams=None, name='image_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0898 	EXP 	Imported stims_sequence.csv as conditions, 10 conditions, 2 params
+0.0926 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+3.0866 	EXP 	attention_cross: autoDraw = True
+5.0752 	ERROR 	Couldn't find image D:\Documentos\GitHub\real_time_bci\stims\right_arrow.png; check path? (tried: D:\Documentos\GitHub\real_time_bci\stims\right_arrow.png)
+5.1076 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\data\441483_Graz_2025-10-16_16h59.08.526.psydat
+5.1085 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\data\\441483_Graz_2025-10-16_16h59.08.526.csv'
+5.1127 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

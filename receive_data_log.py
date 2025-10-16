@@ -22,7 +22,7 @@ CODE_MAP           = {
 }
 
 # --- Saída (Windows) ---
-LOG_DIR            = r"C:\Users\Unifesp\Desktop\Dados Seidi" # Mudar dependendo do computador
+LOG_DIR            = r"C:\Users\User\Desktop\Dados" # Mudar dependendo do computador
 
 def resolve_stream(name: str, stype: str, timeout: float = 4.0):
     """Resolve por name e, se falhar, por type."""

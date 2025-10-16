@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, glob, re
+import os, glob, re, sys, json, platform
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,6 +11,9 @@ from sklearn.model_selection import StratifiedGroupKFold
 from pyriemann.estimation import Covariances
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.tangentspace import tangent_space
+import pickle
+import sklearn
+import pyriemann
 
 # ======================= CONFIG =======================
 DATA_DIR       = r"C:\Users\User\Desktop\Dados"
@@ -28,6 +31,13 @@ PCA_DIM        = 2                # fixo
 SVC_C          = 1.0              # fixo
 RNG_SEED       = 42
 CV_SPLITS      = 5
+
+# ===== Seleção de canais =====
+# SELECT_BY: "index"  -> usa números (com base escolhida por INDEX_BASE)
+#            "name"   -> usa nomes exatamente como aparecem no CSV (ex.: "ch1", "C3", etc.)
+SELECT_BY        = "index"        # "index" ou "name"
+INDEX_BASE       = 0              # 0 => índices Python (0,1,2,...); 1 => índices 1-based
+SELECT_CHANNELS  = []  # vazio [] => usa todos os canais
 # ======================================================
 
 def _find_latest(folder: str, pattern: str) -> str:
@@ -219,6 +229,33 @@ def plot_pca_scatter(X_pca: np.ndarray, y: np.ndarray, clf: SVC, out_png: str):
     plt.savefig(out_png, dpi=150)
     plt.close(fig)
 
+# ====== utilitário de seleção de canais ======
+def select_channel_indices(select_by: str,
+                           selection: List,
+                           ch_names: List[str],
+                           index_base: int = 0) -> List[int]:
+    """
+    Retorna índices dos canais a usar.
+    - select_by="name": 'selection' contém nomes exatamente como em ch_names.
+    - select_by="index": 'selection' contém números; se index_base=1, converte p/ 0-based.
+    - Se selection vazio -> retorna todos.
+    """
+    if selection is None or len(selection) == 0:
+        return list(range(len(ch_names)))
+
+    if select_by.lower() == "name":
+        name_to_idx = {nm: i for i, nm in enumerate(ch_names)}
+        missing = [nm for nm in selection if nm not in name_to_idx]
+        if missing:
+            raise ValueError(f"Canais não encontrados (por nome): {missing}")
+        return [name_to_idx[nm] for nm in selection]
+
+    # por índice
+    idx = [int(v) - (1 if index_base == 1 else 0) for v in selection]
+    if any((i < 0 or i >= len(ch_names)) for i in idx):
+        raise ValueError(f"Algum índice está fora do range [0, {len(ch_names)-1}] (após base).")
+    return idx
+
 def main():
     # arquivos
     markers_csv = MARKERS_FILE or _find_latest(DATA_DIR, "graz_*markers_*.csv")
@@ -231,9 +268,15 @@ def main():
     t_sig, X_all, ch_all = read_signal_csv(signal_csv)
     print(f"[train] Fs fixo={FS_HZ:.1f} Hz | samples={X_all.shape[0]} | canais={len(ch_all)}")
 
+    # seleção de canais
+    sel_idx = select_channel_indices(SELECT_BY, SELECT_CHANNELS, ch_all, INDEX_BASE)
+    ch_sel  = [ch_all[i] for i in sel_idx]
+    X_sel   = X_all[:, sel_idx]
+    print(f"[train] Seleção de canais: {len(sel_idx)} canais -> {ch_sel}")
+
     # filtro
-    Xf = bandpass(X_all, FS_HZ, BP_ORDER, BP_BAND)
-    print(f"[train] Sinal filtrado: {Xf.shape} (samples x canais)")
+    Xf = bandpass(X_sel, FS_HZ, BP_ORDER, BP_BAND)
+    print(f"[train] Sinal filtrado: {Xf.shape} (samples x canais selecionados)")
 
     # trials por tentativa
     atts = attempts_by_class(t_mark, labels)
@@ -269,9 +312,72 @@ def main():
     out_prefix = os.path.join(os.path.dirname(signal_csv), base)
     pca_png   = out_prefix + "_pca.png"
 
-    # salvar figura PCA (sempre)
+    # salvar figura PCA
     plot_pca_scatter(Xp, y, clf, pca_png)
     print(f"[train] Figura salva: {pca_png}")
+
+    # ==================== SALVAR ARTEFATOS ====================
+    cmean_p = out_prefix + "_best_c_mean.pkl"
+    pca_p   = out_prefix + "_dim_red.pkl"
+    clf_p   = out_prefix + "_classifier.pkl"
+    meta_p  = out_prefix + "_meta.json"
+    ch_p    = out_prefix + "_channels.txt"
+
+    # 1) binários
+    with open(cmean_p, "wb") as f:
+        pickle.dump(best_cmean, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(pca_p, "wb") as f:
+        pickle.dump(best_pca, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(clf_p, "wb") as f:
+        pickle.dump(clf, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # 2) canais usados (texto, opcional)
+    try:
+        with open(ch_p, "w", encoding="utf-8") as f:
+            f.write("\n".join(ch_sel))
+    except Exception:
+        pass
+
+    # 3) metadata (recomendado)
+    meta = {
+        "created_at_utc": pd.Timestamp.utcnow().isoformat(),
+        "data_dir": DATA_DIR,
+        "markers_file": os.path.basename(markers_csv),
+        "signal_file": os.path.basename(signal_csv),
+        "fs_hz": FS_HZ,
+        "filter": {"type": "butter_bandpass", "order": BP_ORDER, "band_hz": BP_BAND},
+        "epoch_s": EPOCH_S,
+        "trial_offset_s": TRIAL_OFFSET_S,
+        "pca_dim": int(getattr(best_pca, "n_components_", PCA_DIM) or PCA_DIM),
+        "svc": {"C": SVC_C, "kernel": "linear", "probability": True, "random_state": RNG_SEED},
+        "classes_map": {"LEFT_MI_STIM": 0, "RIGHT_MI_STIM": 1},
+        "cv": {
+            "splits": CV_SPLITS,
+            "acc_mean": float(np.mean(accs)),
+            "acc_std": float(np.std(accs, ddof=1) if len(accs)>1 else 0.0)
+        },
+        "channels_selected": ch_sel,
+        "select_by": SELECT_BY,
+        "index_base": INDEX_BASE,
+        "rng_seed": RNG_SEED,
+        "python": sys.version,
+        "platform": platform.platform(),
+        "versions": {
+            "numpy": np.__version__,
+            "scipy": getattr(signal, "__version__", None),
+            "sklearn": sklearn.__version__,
+            "pyriemann": pyriemann.__version__,
+        }
+    }
+    with open(meta_p, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+    print("[train] Artefatos salvos:")
+    print(" ", cmean_p)
+    print(" ", pca_p)
+    print(" ", clf_p)
+    print(" ", meta_p)
+    print(" ", ch_p)
 
 if __name__ == "__main__":
     main()

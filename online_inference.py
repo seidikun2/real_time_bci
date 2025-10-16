@@ -14,17 +14,24 @@ from pyriemann.tangentspace import tangent_space
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_clock
 
 # ===================== CONFIG (editar no Spyder) =====================
-OUT_DIR             = r"C:\Users\Unifesp\Desktop\Dados Seidi"         # pasta para salvar o CSV
-SIGNAL_NAME         = "Cognionics Wireless EEG"                       # nome do stream LSL de EEG
+OUT_DIR             = r"C:\Users\User\Desktop\Dados"         # pasta para salvar o CSV
+SIGNAL_NAME         = "GrazMI_SimEEG"                       # nome do stream LSL de EEG
 MODEL_PREFIX        = None                                            # prefixo completo dos artefatos OU None
-EPOCH_S             = 2.0                                             # janela (s)
+EPOCH_S             = 2.5                                             # janela (s)
 STEP_S              = 0.05                                            # passo entre inferências (s)
-BAND_HZ             = (8.0, 30.0)                                     # bandpass (Hz)
+BAND_HZ             = (5.0, 50.0)                                     # bandpass (Hz)
 FILTER_ORDER        = 4                                               # ordem do filtro
 OUTLET_NAME         = "Signal"                                        # nome do stream LSL de saída
-LSL_RATE_HZ         = 30.0                                            # 0 => enviar a cada inferência
+LSL_RATE_HZ         = 50.0                                            # 0 => enviar a cada inferência
 LEFT_LABEL          = None                                            # rótulo explícito da classe LEFT (se usar proba)
 RIGHT_LABEL         = None                                            # rótulo explícito da classe RIGHT (se usar proba)
+
+# ===== Seleção de canais (NOVO) =====
+# SELECT_BY: "index"  -> usa números (com base escolhida por INDEX_BASE)
+#            "name"   -> usa nomes exatamente como no stream LSL (desc/channels/channel/label)
+SELECT_BY           = "index"          # "index" ou "name"
+INDEX_BASE          = 0                # 0 => Python (0,1,2,...); 1 => 1-based
+SELECT_CHANNELS     = []  # vazio [] => usa todos
 # ====================================================================
 
 def log(msg: str):
@@ -60,6 +67,55 @@ def make_outlet_unified(name="Signal", stype="EEG", srate: float = 0.0) -> Strea
         ch.append_child_value("unit", unit)
         ch.append_child_value("type", "BCI")
     return StreamOutlet(info)
+
+# --------- NOVO: nomes e seleção de canais vindos do LSL ----------
+def get_lsl_channel_names(info: StreamInfo):
+    """
+    Retorna lista de nomes de canais do stream LSL.
+    Se não houver labels no desc(), usa fallback ['ch1', 'ch2', ...].
+    """
+    C = int(info.channel_count())
+    try:
+        chs = info.desc().child("channels")
+        names = []
+        if chs is not None:
+            ch = chs.child("channel")
+            while ch is not None and ch.name() == "channel":
+                lab = ch.child_value("label") or ""
+                lab = lab.strip()
+                names.append(lab if lab else None)
+                ch = ch.next_sibling()
+        # se não achou rótulos suficientes, completa com fallback
+        if not names or len([n for n in names if n]) < C:
+            names = [names[i] if i < len(names) and names[i] else None for i in range(C)]
+            names = [n if n else f"ch{i+1}" for i, n in enumerate(names)]
+        # garante tamanho C
+        if len(names) != C:
+            names = names[:C] if len(names) > C else names + [f"ch{i+1}" for i in range(len(names), C)]
+        return names
+    except Exception:
+        return [f"ch{i+1}" for i in range(C)]
+
+def select_channel_indices(select_by: str, selection, ch_names, index_base: int = 0):
+    """
+    - select_by='name': 'selection' é lista de nomes exatamente como em ch_names.
+    - select_by='index': 'selection' é lista de inteiros; se index_base=1, converte p/ 0-based.
+    - selection vazio/None -> todos os canais.
+    """
+    C = len(ch_names)
+    if not selection:
+        return list(range(C))
+    if str(select_by).lower() == "name":
+        name_to_idx = {nm: i for i, nm in enumerate(ch_names)}
+        missing = [nm for nm in selection if nm not in name_to_idx]
+        if missing:
+            raise ValueError(f"Canais não encontrados (por nome): {missing}\nDisponíveis: {ch_names}")
+        return [name_to_idx[nm] for nm in selection]
+    # por índice
+    idx = [int(v) - (1 if index_base == 1 else 0) for v in selection]
+    if any((i < 0 or i >= C) for i in idx):
+        raise ValueError(f"Algum índice está fora do range [0, {C-1}] (após base). Seleção={idx}")
+    return idx
 
 # ------------------------ Modelo ------------------------
 def load_artifacts(prefix_or_dir: str):
@@ -142,7 +198,15 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
     info = inlet.info()
     fs = float(info.nominal_srate()); C = int(info.channel_count())
     if fs <= 0: raise RuntimeError("Fs nominal inválida no stream LSL.")
+    ch_all = get_lsl_channel_names(info)  # NOVO
     log(f"Fs={fs:.2f} Hz, Canais={C}")
+    log(f"Canais LSL: {ch_all}")
+
+    # ===== Seleção de canais (NOVO) =====
+    sel_idx = select_channel_indices(SELECT_BY, SELECT_CHANNELS, ch_all, INDEX_BASE)
+    ch_sel  = [ch_all[i] for i in sel_idx]
+    C_sel   = len(sel_idx)
+    log(f"Seleção de canais: {C_sel} -> {ch_sel}")
 
     # Carrega modelo
     cmean, pca, clf = load_artifacts(model_prefix_or_dir)
@@ -161,7 +225,7 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
         raise ValueError("Parâmetros de janela/step inválidos (aumente epoch/step).")
     log(f"Janela={win_n} amostras ({epoch_s:.2f}s), Step={hop_n} amostras ({step_s:.2f}s)")
 
-    # Buffers
+    # Buffers (armazenam já os canais SELECIONADOS)
     buf_X = deque(maxlen=win_n + 8*hop_n)
     buf_t = deque(maxlen=win_n + 8*hop_n)
     next_compute_at = win_n
@@ -185,26 +249,29 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
             # ===== 1) Receber chunk do LSL de entrada =====
             data, ts = inlet.pull_chunk(timeout=0.2, max_samples=8*hop_n)
 
-            # ===== 2) Atualizar scheduler de envio (não bloquear) =====
+            # ===== 2) Scheduler de envio (não bloquear) =====
             if send_interval and latest_vec is not None:
                 now_mono = time.monotonic()
                 if now_mono >= next_send_monotonic:
-                    # Envia SOMENTE a última classificação disponível (descarta atrasados)
                     outlet.push_sample(latest_vec, timestamp=local_clock())
-                    # agenda o próximo envio sem "catch-up" para não entupir
                     next_send_monotonic = now_mono + send_interval
 
             if not ts:
                 continue
 
-            # ===== 3) Alimentar buffers e, quando for hora, inferir =====
+            # ===== 3) Alimentar buffers com canais selecionados =====
             for x, t_lsl in zip(data, ts):
-                buf_X.append(np.asarray(x, dtype=float))
+                x = np.asarray(x, dtype=float)
+                if x.size < max(sel_idx)+1:
+                    # segurança: stream com menos canais do que o esperado
+                    continue
+                x_sel = x[sel_idx]                 # <- NOVO: aplica seleção aqui
+                buf_X.append(x_sel)                # guarda apenas os selecionados
                 buf_t.append(float(t_lsl))
                 n_samples += 1
 
                 if n_samples >= next_compute_at and len(buf_X) >= win_n:
-                    # --- janela (T,C) ---
+                    # --- janela (T,C_sel) ---
                     X_win = np.vstack(list(buf_X)[-win_n:])
                     t_win = np.asarray(list(buf_t)[-win_n:], dtype=float)
 
@@ -223,7 +290,6 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
                     if has_proba:
                         proba = clf.predict_proba(feat.reshape(1, -1))[0]   # (2,)
                         classes = list(getattr(clf, "classes_", []))
-                        # mapeia classes -> (left,right)
                         if (LEFT_LABEL in classes) and (RIGHT_LABEL in classes):
                             li, ri = classes.index(LEFT_LABEL), classes.index(RIGHT_LABEL)
                             left, right = float(proba[li]), float(proba[ri])
@@ -239,7 +305,6 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
                                 left, right = float(proba[0]), float(proba[1])
                         both = 0.0
                     else:
-                        # decision_function -> lógica idêntica ao seu exemplo
                         raw = float(clf.decision_function(feat.reshape(1, -1))[0])
                         out_val = float(np.clip(raw, -1.0, 1.0))
                         if out_val < 0:
@@ -250,26 +315,21 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
                             left, right = 0.0, 0.0
                         both = 0.0
 
-                    # --- registra a classificação mais recente para o scheduler de envio ---
-                    latest_vec = [-right, both, -left]
-
-                    # --- tempos (para o CSV apenas quando há nova inferência) ---
+                    # --- publica / loga ---
+                    latest_vec = [-right, -right, left]
                     t_out = float(t_win[-1])
                     recv_time_s = time.time()
                     iso = timestamp_iso_from_lsl(t_out, unix_offset)
 
-                    # --- log CSV (1 linha por inferência, não por envio) ---
                     wcsv.writerow([
                         iso, f"{t_out:.9f}", f"{recv_time_s:.6f}",
                         f"{p1:.6f}", f"{p2:.6f}",
                         f"{left:.6f}", f"{both:.6f}", f"{right:.6f}"
                     ])
 
-                    # --- se não houver throttling, envia já (timestamp no clock local) ---
                     if not send_interval:
                         outlet.push_sample(latest_vec, timestamp=local_clock())
 
-                    # próxima janela de inferência
                     next_compute_at += hop_n
 
     except KeyboardInterrupt:
@@ -280,7 +340,6 @@ def run(signal_name: str, model_prefix_or_dir: str, out_dir: str, epoch_s: float
         except Exception:
             pass
         log(f"Arquivo salvo: {csv_path}")
-
 
 # ===================== Execução direta no Spyder =====================
 if __name__ == "__main__":
