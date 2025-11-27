@@ -5,30 +5,29 @@ import time
 import datetime as     dt
 from   pylsl    import resolve_byprop, StreamInlet, local_clock
 
+
+# --- Saída (Windows) ---
+LOG_DIR            = r"C:\Users\User\Desktop\Dados" # Mudar dependendo do computador
+
+# --- Identificadores da sessão ---
+SUBJECT_ID         = "SY100"        # código do sujeito
+EXP_NAME           = "TEST"         # experimento (string)
+SESSION_ID         = 1              # número da sessão
+SESSION_TYPE       = "IM_treino"    # tipo (IM_treino, EM_treino etc.)
+
 # --- Streams de entrada ---
 STREAM_NAME        = "GrazMI_Markers"          # Marcações do Psychopy
 STREAM_TYPE        = "Markers"
 SIGNAL_NAME        = "Cognionics Wireless EEG" # "GrazMI_SimEEG"   # Sinal que chega
 SIGNAL_TYPE        = "EEG"
+CODE_MAP           = {1:"BASELINE", 2:"ATTENTION", 3:"LEFT_MI_STIM", 4:"RIGHT_MI_STIM", 5:"ATTEMPT", 6:"REST",}
 
-# --- Códigos (Graz) ---
-CODE_MAP           = {
-    1: "BASELINE",
-    2: "ATTENTION",
-    3: "LEFT_MI_STIM",
-    4: "RIGHT_MI_STIM",
-    5: "ATTEMPT",
-    6: "REST",
-}
-
-# --- Saída (Windows) ---
-LOG_DIR            = r"C:\Users\User\Desktop\Dados" # Mudar dependendo do computador
 
 def resolve_stream(name: str, stype: str, timeout: float = 4.0):
     """Resolve por name e, se falhar, por type."""
-    streams        = resolve_byprop('name', name, timeout=timeout)  # Tenta pelo nome
+    streams        = resolve_byprop('name', name, timeout=timeout)
     if not streams:
-        streams    = resolve_byprop('type', stype, timeout=timeout) # Senão, pelo tipo
+        streams    = resolve_byprop('type', stype, timeout=timeout)
     if not streams:
         raise RuntimeError(f"Nenhum stream LSL encontrado (name='{name}' / type='{stype}').")
     si             = streams[0]
@@ -37,7 +36,9 @@ def resolve_stream(name: str, stype: str, timeout: float = 4.0):
 
 def open_marker_logger():
     os.makedirs(LOG_DIR, exist_ok=True)
-    fname          = dt.datetime.now().strftime(os.path.join(LOG_DIR, "graz_markers_%Y%m%d_%H%M%S.csv"))
+    ts_str         = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    fname_base     = f"{SUBJECT_ID}_{EXP_NAME}_S{SESSION_ID}_{SESSION_TYPE}_markers_{ts_str}.csv"
+    fname          = os.path.join(LOG_DIR, fname_base)
     f              = open(fname, "w", newline="", encoding="utf-8")
     w              = csv.writer(f)
     w.writerow(["iso_time", "lsl_time_s", "code", "label", "local_recv_iso", "local_recv_s"])
@@ -45,7 +46,9 @@ def open_marker_logger():
 
 def open_signal_logger(channels: int):
     os.makedirs(LOG_DIR, exist_ok=True)
-    fname          = dt.datetime.now().strftime(os.path.join(LOG_DIR, "graz_signal_%Y%m%d_%H%M%S.csv"))
+    ts_str         = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    fname_base     = f"{SUBJECT_ID}_{EXP_NAME}_S{SESSION_ID}_{SESSION_TYPE}_signal_{ts_str}.csv"
+    fname          = os.path.join(LOG_DIR, fname_base)
     f              = open(fname, "w", newline="", encoding="utf-8")
     w              = csv.writer(f)
     header         = ["iso_time", "lsl_time_s", "local_recv_s"] + [f"ch{i+1}" for i in range(channels)]
@@ -70,7 +73,6 @@ def main():
     print("Aguardando dados... (Ctrl+C para sair)")
     print("Códigos:", ", ".join(f"{k}={v}" for k, v in CODE_MAP.items()))
 
-    # contadores (apenas informação esporádica)
     last_info      = time.time()
     n_mark         = 0
     n_sig          = 0
@@ -91,7 +93,6 @@ def main():
                         code     = int(val)
                     label        = CODE_MAP.get(code, "UNKNOWN")
 
-                    # tempos
                     iso          = dt.datetime.fromtimestamp(ts + unix_offset).isoformat(timespec="milliseconds")
                     local_now    = time.time()
                     local_iso    = dt.datetime.fromtimestamp(local_now).isoformat(timespec="milliseconds")
@@ -104,21 +105,19 @@ def main():
             sig_samples, sig_timestamps = inlet_sig.pull_chunk(timeout=0.05, max_samples=256)
             if sig_timestamps:
                 rows             = []
-                now_local        = time.time()  # captura uma vez (reduz custo)
+                now_local        = time.time()
                 for samp, ts in zip(sig_samples, sig_timestamps):
                     iso          = dt.datetime.fromtimestamp(ts + unix_offset).isoformat(timespec="milliseconds")
-                    # linha: iso_time, lsl_time_s, local_recv_s, ch1..chN
                     row          = [iso, f"{ts:.6f}", f"{now_local:.6f}"] + [f"{float(v):.6f}" for v in samp]
                     rows.append(row)
                 wS.writerows(rows)
                 fS.flush()
                 n_sig           += len(rows)
 
-            # print info a cada ~2s para não poluir
-            tnow                 = time.time()
+            tnow              = time.time()
             if tnow - last_info > 4.0:
                 print(f"(acumulado) marcadores={n_mark}, amostras_sinal={n_sig}")
-                last_info        = tnow
+                last_info      = tnow
 
     except KeyboardInterrupt:
         print(f"\nFinalizado.\n - Log de marcadores: {fnameM}\n - Log de sinal: {fnameS}")
