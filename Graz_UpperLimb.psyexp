@@ -259,7 +259,7 @@
         <Param val="0" valType="num" updates="constant" name="ori"/>
         <Param val="(0, 0)" valType="list" updates="constant" name="pos"/>
         <Param val="True" valType="bool" updates="None" name="saveStartStop"/>
-        <Param val="(0.5, 0.5)" valType="list" updates="constant" name="size"/>
+        <Param val="(1.0, 1.0)" valType="list" updates="constant" name="size"/>
         <Param val="" valType="code" updates="None" name="startEstim"/>
         <Param val="time (s)" valType="str" updates="None" name="startType"/>
         <Param val="0.0" valType="code" updates="None" name="startVal"/>
@@ -457,12 +457,12 @@
     <Routine name="Baseline"/>
     <LoopInitiator loopType="TrialHandler" name="trials">
       <Param name="Selected rows" updates="None" val="" valType="str"/>
-      <Param name="conditions" updates="None" val="[OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\left_arrow.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'D:\\Documentos\\GitHub\\real_time_bci\\stims\\right_arrow.png'), ('event_label', 'RIGHT_MI_STIM')])]" valType="str"/>
+      <Param name="conditions" updates="None" val="[OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_hand.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_hand.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_hand.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_hand.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\left_hand.png'), ('event_label', 'LEFT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_hand.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_hand.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_hand.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_hand.png'), ('event_label', 'RIGHT_MI_STIM')]), OrderedDict([('img', 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\stims\\right_hand.png'), ('event_label', 'RIGHT_MI_STIM')])]" valType="str"/>
       <Param name="conditionsFile" updates="None" val="stims_sequence.csv" valType="file"/>
       <Param name="endPoints" updates="None" val="[0, 1]" valType="num"/>
       <Param name="isTrials" updates="None" val="True" valType="bool"/>
       <Param name="loopType" updates="None" val="random" valType="str"/>
-      <Param name="nReps" updates="None" val="4" valType="num"/>
+      <Param name="nReps" updates="None" val="1" valType="num"/>
       <Param name="name" updates="None" val="trials" valType="code"/>
       <Param name="random seed" updates="None" val="" valType="code"/>
     </LoopInitiator>

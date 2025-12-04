@@ -1,0 +1,89 @@
+experiment:
+  subject_id:      "LC101"
+  session_id:      2
+  log_root:        "C:/Users/User/Desktop/Dados"
+  exp_name:        "TEST"
+  session_type:    "IM_treino"
+
+lsl:
+  marker_name:     "GrazMI_Markers"
+  marker_type:     "Markers"
+  signal_name:     "Cognionics Wireless EEG"
+  signal_type:     "EEG"
+
+runtime:
+  simulate_signal: true      # true = TX simulado + RX; false = apenas RX (hardware real)
+  start_mode:      "realtime_only"    # "full_loop", "train_once" ou "realtime_only"
+
+# ----------------- SINAL SIMULADO (TX) -----------------
+sim_signal:
+  fs:              250.0
+  channels:        16
+  chunk:           10
+  noise_std:       0.5
+
+sim_burst:
+  freq:            10.0
+  amp:             1.5
+  dur:             3.5
+  taper_frac:      0.2
+
+sim_profiles:
+  left_mi:         [1.0, 0.3]   # mão direita -> hemisfério ESQ maior
+  right_mi:        [0.3, 1.0]   # mão esquerda -> hemisfério DIR maior
+
+codes:
+  left_mi:         3
+  right_mi:        4
+  attempt:         5
+  map:
+    "1":           "BASELINE"
+    "2":           "ATTENTION"
+    "3":           "LEFT_MI_STIM"
+    "4":           "RIGHT_MI_STIM" 
+    "5":           "ATTEMPT"
+    "6":           "REST"
+
+# ----------------- CALIBRAÇÃO DO DECODER -----------------
+model:
+  fs_hz:           500.0
+  bp_order:        4
+  bp_band:         [5.0, 50.0]         
+  epoch_s:         2.5
+  trial_offset_s:  0.5
+  pca_dim:         2
+  svc_c:           1.0
+  rng_seed:        42
+  cv_splits:       5
+
+  # seleção de canais SEMPRE por índice, base 1
+  select_by:       "index"        # por enquanto não usamos "name"
+  index_base:      1
+  select_channels: []            # [] => todos; ex: [1,2,4,5,7,9,10]
+
+# ----------------- CHECK_DATA (visualização opcional) -----------------
+check_data:
+  select_channels: [1, 2, 4, 5, 7, 9, 10]
+  hp_cutoff_hz:    0.5
+  hp_order:        4
+
+  classes:         ["LEFT_MI_STIM", "RIGHT_MI_STIM"]
+
+  tmin:            -0.5
+  tmax:            3.75
+  baseline_s:      0.0
+  save_png:        true
+
+# ----------------- DECODER EM TEMPO REAL -----------------
+decoder:
+  epoch_s:        2.5
+  step_s:         0.05
+  band_hz:        [5.0, 50.0]
+  filter_order:   4
+
+  outlet_name:    "Signal"
+  lsl_rate_hz:    50.0  # 0 => envia amostra a cada inferência
+
+  # se quiser forçar mapeamento de classes do clf:
+  left_label:     null  # ex: 0, "LEFT_MI_STIM" etc.
+  right_label:    null
