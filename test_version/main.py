@@ -1,14 +1,13 @@
 # main.py
 import threading
 import numpy as np
-
-from config_models       import load_config, AppConfig
-from online_inference    import run_realtime_decoder
+from pathlib                  import Path
+from config_models            import load_config, AppConfig
+from online_inference         import run_realtime_decoder
 from realtime_signal_transmit import run_transmission
-from receive_data_log    import run_receive
-from decoder_calibration import run_calibration as run_decoder_calibration
-from check_data          import run_check_data
-
+from receive_data_log         import run_receive
+from decoder_calibration      import run_calibration as run_decoder_calibration
+from check_data               import run_check_data
 
 def run_imagery_training(cfg: AppConfig) -> None:
     """
@@ -18,23 +17,18 @@ def run_imagery_training(cfg: AppConfig) -> None:
     Ambos rodam em paralelo e são controlados por um stop_event.
     """
     print("\n=== ETAPA 1: Treino de imagética ===")
-    print(
-        f"Sujeito: {cfg.experiment.subject_id}, "
+    print(f"Sujeito: {cfg.experiment.subject_id}, "
         f"Sessão: {cfg.experiment.session_id}, "
         f"Tipo: {cfg.experiment.session_type}"
     )
 
-    stop_event = threading.Event()
-    threads    = []
+    stop_event      = threading.Event()
+    threads         = []
 
     # TX simulada (opcional)
     if cfg.runtime.simulate_signal:
         print(">> MODO TESTE: sinal EEG SIMULADO via LSL (transmissão + recepção).")
-        tx_thread = threading.Thread(
-            target=run_transmission,
-            args=(cfg, "train", stop_event),
-            daemon=True,
-        )
+        tx_thread   = threading.Thread(target=run_transmission, args=(cfg, "train", stop_event), daemon=True,)
         threads.append(tx_thread)
         tx_thread.start()
     else:
@@ -42,11 +36,7 @@ def run_imagery_training(cfg: AppConfig) -> None:
         print("   Certifique-se de que o software de aquisição está transmitindo o EEG por LSL.")
 
     # RX sempre
-    rx_thread = threading.Thread(
-        target=run_receive,
-        args=(cfg, "train", stop_event),
-        daemon=True,
-    )
+    rx_thread       = threading.Thread(target=run_receive, args=(cfg, "train", stop_event), daemon=True,)
     threads.append(rx_thread)
     rx_thread.start()
 
@@ -69,19 +59,17 @@ def run_imagery_training(cfg: AppConfig) -> None:
 
     print("[INFO] Etapa de treino encerrada.\n")
 
-
 def run_calibration(cfg: AppConfig) -> None:
     print("\n=== ETAPA 2: Calibração de modelo ===")
 
-    res       = run_decoder_calibration(cfg)
-    acc_mean  = float(np.mean(res["accs_cv"])) if res["accs_cv"] else float("nan")
+    res             = run_decoder_calibration(cfg)
+    acc_mean        = float(np.mean(res["accs_cv"])) if res["accs_cv"] else float("nan")
     print(f"[main] Acurácia média CV ~ {acc_mean:.3f}")
     input("Revise as métricas numéricas. Pressione ENTER para continuar...")
 
-    qc = input("Deseja visualizar os dados (check_data)? [s/N]: ").strip().lower()
+    qc              = input("Deseja visualizar os dados (check_data)? [s/N]: ").strip().lower()
     if qc in ("s", "sim", "y", "yes"):
         run_check_data(cfg)
-
 
 def run_realtime(cfg: AppConfig) -> None:
     """
@@ -92,22 +80,12 @@ def run_realtime(cfg: AppConfig) -> None:
     print("\n=== ETAPA 3: Tempo-real (TX + RX + INFERÊNCIA) ===")
 
     # RX sempre ativo (para log)
-    rx_thread = threading.Thread(
-        target=run_receive,
-        args=(cfg,),
-        kwargs={"mode": "realtime"},
-        daemon=True,
-    )
+    rx_thread       = threading.Thread(target=run_receive, args=(cfg,), kwargs={"mode": "realtime"}, daemon=True,)
     rx_thread.start()
 
     # Se simulado, liga TX
     if cfg.runtime.simulate_signal:
-        tx_thread = threading.Thread(
-            target=run_transmission,
-            args=(cfg,),
-            kwargs={"mode": "realtime"},
-            daemon=True,
-        )
+        tx_thread   = threading.Thread(target=run_transmission, args=(cfg,), kwargs={"mode": "realtime"}, daemon=True,)
         tx_thread.start()
         print(">> MODO TESTE: sinal EEG SIMULADO via LSL (TX + RX + decoder).")
     else:
@@ -116,10 +94,10 @@ def run_realtime(cfg: AppConfig) -> None:
     # Decoder roda no thread principal
     run_realtime_decoder(cfg, mode="realtime")
 
-
 def main() -> None:
-    cfg: AppConfig = load_config("config.yaml")
-    mode           = getattr(cfg.runtime, "start_mode", "full_loop").lower()
+    CONFIG_PATH     = Path(__file__).resolve().parent / "config.yaml"
+    cfg: AppConfig  = load_config(CONFIG_PATH)
+    mode            = getattr(cfg.runtime, "start_mode", "full_loop").lower()
 
     if mode == "realtime_only":
         print("\n[main] start_mode='realtime_only' -> indo direto para tempo-real.\n")
@@ -131,7 +109,7 @@ def main() -> None:
         run_imagery_training(cfg)
         run_calibration(cfg)
 
-        ok = input("Ir para tempo-real agora? [s/N]: ").strip().lower()
+        ok         = input("Ir para tempo-real agora? [s/N]: ").strip().lower()
         if ok in ("s", "sim", "y", "yes"):
             run_realtime(cfg)
         else:
@@ -144,13 +122,12 @@ def main() -> None:
         run_imagery_training(cfg)
         run_calibration(cfg)
 
-        ok = input("As métricas estão OK? Prosseguir para tempo-real? [s/N]: ").strip().lower()
+        ok         = input("As métricas estão OK? Prosseguir para tempo-real? [s/N]: ").strip().lower()
         if ok in ("s", "sim", "y", "yes"):
             break
         print("Repetindo Treino + Calibração...\n")
 
     run_realtime(cfg)
-
 
 if __name__ == "__main__":
     main()

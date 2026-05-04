@@ -13,7 +13,7 @@ lsl:
 
 runtime:
   simulate_signal: true      # true = TX simulado + RX; false = apenas RX (hardware real)
-  start_mode:      "realtime_only"    # "full_loop", "train_once" ou "realtime_only"
+  start_mode:      "full_loop"    # "full_loop", "train_once" ou "realtime_only"
 
 # ----------------- SINAL SIMULADO (TX) -----------------
 sim_signal:
