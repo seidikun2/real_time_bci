@@ -1,8 +1,8 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-This experiment was created using PsychoPy3 Experiment Builder (v2025.1.1),
-    on maio 07, 2026, at 13:28
+This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
+    on sáb 16 mai 2026 16:42:50
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -16,7 +16,6 @@ from psychopy import locale_setup
 from psychopy import prefs
 from psychopy import plugins
 plugins.activatePlugins()
-prefs.hardware['audioLib'] = 'ptb'
 from psychopy import sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware
 from psychopy.tools import environmenttools
 from psychopy.constants import (
@@ -39,7 +38,7 @@ deviceManager = hardware.DeviceManager()
 # ensure that relative paths start from the same directory as this script
 _thisDir = os.path.dirname(os.path.abspath(__file__))
 # store info about the experiment session
-psychopyVersion = '2025.1.1'
+psychopyVersion = '2026.1.3'
 expName = 'Graz'  # from the Builder filename that created this script
 expVersion = ''
 # a list of functions to run when the experiment ends (starts off blank)
@@ -133,10 +132,12 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version=expVersion,
         extraInfo=expInfo, runtimeInfo=None,
-        originPath='D:\\Documentos\\GitHub\\real_time_bci\\Graz_UpperLimb_lastrun.py',
+        originPath='/home/seidi/Documentos/GitHub/real_time_bci/Graz_UpperLimb_lastrun.py',
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
+    # store pilot mode in data file
+    thisExp.addData('piloting', PILOTING, priority=priority.LOW)
     thisExp.setPriority('thisRow.t', priority.CRITICAL)
     thisExp.setPriority('expName', priority.LOW)
     # return experiment handler
@@ -340,6 +341,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     """
     # mark experiment as started
     thisExp.status = STARTED
+    # update experiment info
+    expInfo['date'] = data.getDateStr()
+    expInfo['expName'] = expName
+    expInfo['expVersion'] = expVersion
+    expInfo['psychopyVersion'] = psychopyVersion
     # make sure window is set to foreground to prevent losing focus
     win.winHandle.activate()
     # make sure variables created by exec are available globally
@@ -483,6 +489,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     if ioServer is not None:
         ioServer.syncClock(globalClock)
     logging.setDefaultClock(globalClock)
+    if eyetracker is not None:
+        eyetracker.enableEventReporting()
     # routine timer to track time remaining of each (possibly non-slip) routine
     routineTimer = core.Clock()
     win.flip()  # flip window to reset last flip timer
@@ -521,6 +529,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     frameN = -1
     
     # --- Run Routine "Start_LSL" ---
+    thisExp.currentRoutine = Start_LSL
     Start_LSL.forceEnded = routineForceEnded = not continueRoutine
     while continueRoutine:
         # get current time
@@ -547,11 +556,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # skip the frame we paused on
             continue
         
-        # check if all components have finished
-        if not continueRoutine:  # a component has requested a forced-end of Routine
+        # has a Component requested the Routine to end?
+        if not continueRoutine:
             Start_LSL.forceEnded = routineForceEnded = True
+        # has the Routine been forcibly ended?
+        if Start_LSL.forceEnded or routineForceEnded:
             break
-        continueRoutine = False  # will revert to True if at least one component still running
+        # has every Component finished?
+        continueRoutine = False
         for thisComponent in Start_LSL.components:
             if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                 continueRoutine = True
@@ -606,6 +618,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     frameN = -1
     
     # --- Run Routine "Baseline" ---
+    thisExp.currentRoutine = Baseline
     Baseline.forceEnded = routineForceEnded = not continueRoutine
     while continueRoutine and routineTimer.getTime() < 3.0:
         # get current time
@@ -636,11 +649,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # skip the frame we paused on
             continue
         
-        # check if all components have finished
-        if not continueRoutine:  # a component has requested a forced-end of Routine
+        # has a Component requested the Routine to end?
+        if not continueRoutine:
             Baseline.forceEnded = routineForceEnded = True
+        # has the Routine been forcibly ended?
+        if Baseline.forceEnded or routineForceEnded:
             break
-        continueRoutine = False  # will revert to True if at least one component still running
+        # has every Component finished?
+        continueRoutine = False
         for thisComponent in Baseline.components:
             if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                 continueRoutine = True
@@ -676,6 +692,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         originPath=-1, 
         trialList=data.importConditions('stims_sequence.csv'), 
         seed=None, 
+        isTrials=True, 
     )
     thisExp.addLoop(trials)  # add the loop to the experiment
     thisTrial = trials.trialList[0]  # so we can initialise stimuli with some values
@@ -735,6 +752,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameN = -1
         
         # --- Run Routine "Attention" ---
+        thisExp.currentRoutine = Attention
         Attention.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine and routineTimer.getTime() < 2.0:
             # if trial has changed, end Routine now
@@ -798,11 +816,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # skip the frame we paused on
                 continue
             
-            # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            # has a Component requested the Routine to end?
+            if not continueRoutine:
                 Attention.forceEnded = routineForceEnded = True
+            # has the Routine been forcibly ended?
+            if Attention.forceEnded or routineForceEnded:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            # has every Component finished?
+            continueRoutine = False
             for thisComponent in Attention.components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -864,6 +885,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameN = -1
         
         # --- Run Routine "Stim" ---
+        thisExp.currentRoutine = Stim
         Stim.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine and routineTimer.getTime() < 1.25:
             # if trial has changed, end Routine now
@@ -927,11 +949,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # skip the frame we paused on
                 continue
             
-            # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            # has a Component requested the Routine to end?
+            if not continueRoutine:
                 Stim.forceEnded = routineForceEnded = True
+            # has the Routine been forcibly ended?
+            if Stim.forceEnded or routineForceEnded:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            # has every Component finished?
+            continueRoutine = False
             for thisComponent in Stim.components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -992,6 +1017,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameN = -1
         
         # --- Run Routine "Attempt" ---
+        thisExp.currentRoutine = Attempt
         Attempt.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine and routineTimer.getTime() < 3.75:
             # if trial has changed, end Routine now
@@ -1055,11 +1081,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # skip the frame we paused on
                 continue
             
-            # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            # has a Component requested the Routine to end?
+            if not continueRoutine:
                 Attempt.forceEnded = routineForceEnded = True
+            # has the Routine been forcibly ended?
+            if Attempt.forceEnded or routineForceEnded:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            # has every Component finished?
+            continueRoutine = False
             for thisComponent in Attempt.components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -1118,6 +1147,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameN = -1
         
         # --- Run Routine "Rest" ---
+        thisExp.currentRoutine = Rest
         Rest.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine and routineTimer.getTime() < 2.0:
             # if trial has changed, end Routine now
@@ -1181,11 +1211,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # skip the frame we paused on
                 continue
             
-            # check if all components have finished
-            if not continueRoutine:  # a component has requested a forced-end of Routine
+            # has a Component requested the Routine to end?
+            if not continueRoutine:
                 Rest.forceEnded = routineForceEnded = True
+            # has the Routine been forcibly ended?
+            if Rest.forceEnded or routineForceEnded:
                 break
-            continueRoutine = False  # will revert to True if at least one component still running
+            # has every Component finished?
+            continueRoutine = False
             for thisComponent in Rest.components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -1266,6 +1299,10 @@ def endExperiment(thisExp, win=None):
     win : psychopy.visual.Window
         Window for this experiment.
     """
+    # stop any playback components
+    if thisExp.currentRoutine is not None:
+        for comp in thisExp.currentRoutine.getPlaybackComponents():
+            comp.stop()
     if win is not None:
         # remove autodraw from all current components
         win.clearAutoDraw()

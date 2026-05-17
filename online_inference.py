@@ -447,7 +447,7 @@ def run_realtime_decoder(
 
                     # Vetor unificado para o outlet
                     latest_vec  = [-right, -right, left]
-                    print(latest_vec)
+                    print(right, left)
 
                     t_out       = float(t_win[-1])
                     recv_time_s = time.time()

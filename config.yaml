@@ -12,7 +12,7 @@ lsl:
   signal_type:     "EEG"
 
 runtime:
-  simulate_signal: false      # true = TX simulado + RX; false = apenas RX (hardware real)
+  simulate_signal: true      # true = TX simulado + RX; false = apenas RX (hardware real)
   start_mode:      "full_loop"    # "full_loop", "train_once" ou "realtime_only"
 
 # ----------------- SINAL SIMULADO (TX) -----------------
@@ -20,11 +20,11 @@ sim_signal:
   fs:              128.0
   channels:        16
   chunk:           10
-  noise_std:       0.9
+  noise_std:       0.5
 
 sim_burst:
   freq:            10.0
-  amp:             1.0
+  amp:             1.5
   dur:             3.5
   taper_frac:      0.2
 

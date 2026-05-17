@@ -1,13 +1,13 @@
 # main.py
 import threading
 import numpy as np
-from pathlib                  import Path
-from config_models            import load_config, AppConfig
-from online_inference         import run_realtime_decoder
-from realtime_signal_transmit import run_transmission
-from receive_data_log         import run_receive
-from decoder_calibration      import run_calibration as run_decoder_calibration
-from check_data               import run_check_data
+from   pathlib                  import Path
+from   config_models            import load_config, AppConfig
+from   online_inference         import run_realtime_decoder
+from   realtime_signal_transmit import run_transmission
+from   receive_data_log         import run_receive
+from   decoder_calibration      import run_calibration as run_decoder_calibration
+from   check_data               import run_check_data
 
 def run_imagery_training(cfg: AppConfig) -> None:
     """
