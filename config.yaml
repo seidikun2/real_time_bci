@@ -1,9 +1,9 @@
 experiment:
   subject_id:      "TT000"
-  session_id:      3
+  session_id:      1
   log_root:        "C:/Users/User/Desktop/Dados"
   exp_name:        "TEST"
-  session_type:    "IM_treino"
+  session_type:    "IM_treino"   # valor base; o main muda por etapa
 
 lsl:
   marker_name:     "GrazMI_Markers"
@@ -12,15 +12,30 @@ lsl:
   signal_type:     "EEG"
 
 runtime:
-  simulate_signal: true      # true = TX simulado + RX; false = apenas RX (hardware real)
-  start_mode:      "full_loop"    # "full_loop", "train_once" ou "realtime_only"
+  simulate_signal: true           # true = TX simulado + RX; false = apenas RX/hardware real
+
+# ----------------- PROTOCOLO -----------------
+# O fluxo agora é controlado pelo main:
+# 1) treino EM
+# 2) treino IM
+# 3) calibração
+# 4) online
+# Cada bloco termina quando o PsychoPy envia block_end_code.
+protocol:
+  block_end_code:       99
+  block_end_label:      "BLOCK_END"
+
+  motor_session_type:   "EM_treino"
+  imagery_session_type: "IM_treino"
+  online_session_type:  "IM_online"
+  model_session_type:   "IM_treino"
 
 # ----------------- SINAL SIMULADO (TX) -----------------
 sim_signal:
   fs:              128.0
   channels:        16
   chunk:           10
-  noise_std:       0.5
+  noise_std:       0.8
 
 sim_burst:
   freq:            10.0
@@ -29,26 +44,28 @@ sim_burst:
   taper_frac:      0.2
 
 sim_profiles:
-  left_mi:         [1.0, 0.3]   # mão direita -> hemisfério ESQ maior
-  right_mi:        [0.3, 1.0]   # mão esquerda -> hemisfério DIR maior
+  left_mi:         [1.0, 0.3]
+  right_mi:        [0.3, 1.0]
 
 codes:
   left_mi:         3
   right_mi:        4
   attempt:         5
+  block_end:       99
   map:
     "1":           "BASELINE"
     "2":           "ATTENTION"
     "3":           "LEFT_MI_STIM"
-    "4":           "RIGHT_MI_STIM" 
+    "4":           "RIGHT_MI_STIM"
     "5":           "ATTEMPT"
     "6":           "REST"
+    "99":          "BLOCK_END"
 
 # ----------------- CALIBRAÇÃO DO DECODER -----------------
 model:
-  fs_hz:           500.0
+  fs_hz:           128.0
   bp_order:        4
-  bp_band:         [5.0, 50.0]         
+  bp_band:         [5.0, 50.0]
   epoch_s:         2.5
   trial_offset_s:  0.5
   pca_dim:         2
@@ -56,19 +73,16 @@ model:
   rng_seed:        42
   cv_splits:       5
 
-  # seleção de canais SEMPRE por índice, base 1
-  select_by:       "index"        # por enquanto não usamos "name"
+  select_by:       "index"
   index_base:      1
-  select_channels: []            # [] => todos; ex: [1,2,4,5,7,9,10]
+  select_channels: []
 
-# ----------------- CHECK_DATA (visualização opcional) -----------------
+# ----------------- CHECK_DATA -----------------
 check_data:
   select_channels: [1, 2, 4, 5, 7, 9, 10]
   hp_cutoff_hz:    0.5
   hp_order:        4
-
   classes:         ["LEFT_MI_STIM", "RIGHT_MI_STIM"]
-
   tmin:            -0.5
   tmax:            3.75
   baseline_s:      0.0
@@ -76,14 +90,11 @@ check_data:
 
 # ----------------- DECODER EM TEMPO REAL -----------------
 decoder:
-  epoch_s:        2.5
-  step_s:         0.05
-  band_hz:        [5.0, 50.0]
-  filter_order:   4
-
-  outlet_name:    "Signal"
-  lsl_rate_hz:    50.0  # 0 => envia amostra a cada inferência
-
-  # se quiser forçar mapeamento de classes do clf:
-  left_label:     null  # ex: 0, "LEFT_MI_STIM" etc.
-  right_label:    null
+  epoch_s:         2.5
+  step_s:          0.05
+  band_hz:         [5.0, 50.0]
+  filter_order:    4
+  outlet_name:     "Signal"
+  lsl_rate_hz:     50.0
+  left_label:      null
+  right_label:     null

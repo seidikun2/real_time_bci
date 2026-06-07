@@ -25,6 +25,7 @@ import re
 import glob
 import csv
 import time
+import threading
 import pickle
 import datetime as dt
 from collections import deque
@@ -34,13 +35,7 @@ import numpy as np
 from scipy import signal
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import tangent_space
-from pylsl import (
-    StreamInfo,
-    StreamOutlet,
-    StreamInlet,
-    resolve_byprop,
-    local_clock,
-)
+from pylsl import (StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_clock,)
 
 from config_models import AppConfig
 
@@ -95,9 +90,7 @@ def _find_model_prefix(cfg: AppConfig, explicit_prefix: Optional[str] = None) ->
     pattern   = os.path.join(train_dir, "*_classifier.pkl")
     cands     = glob.glob(pattern)
     if not cands:
-        raise FileNotFoundError(
-            f"Não encontrei nenhum *_classifier.pkl com padrão:\n  {pattern}"
-        )
+        raise FileNotFoundError(f"Não encontrei nenhum *_classifier.pkl com padrão:\n  {pattern}")
     clf_p  = max(cands, key=os.path.getmtime)
     prefix = re.sub(r"_classifier\.pkl$", "", clf_p)
     log(f"Modelo selecionado (mais recente em train/): {clf_p}")
@@ -142,9 +135,7 @@ def load_artifacts(prefix_or_dir: str):
 
 
 # ==================== LSL UTILS =====================
-def resolve_signal_inlet(
-    name: str, stype: str = "EEG", timeout: float = 3.0
-) -> StreamInlet:
+def resolve_signal_inlet(name: str, stype: str = "EEG", timeout: float = 3.0) -> StreamInlet:
     label = f"name='{name}'" if name else f"type='{stype}'"
     log(f"Procurando stream LSL do sinal ({label}) ...")
     while True:
@@ -163,22 +154,17 @@ def resolve_signal_inlet(
         time.sleep(1.0)
 
 
-def make_outlet_unified(name: str, stype: str = "EEG", srate: float = 0.0) -> StreamOutlet:
-    """
-    Outlet LSL de 3 canais:
-      0: left   (probabilidade [0,1] ou valor negativo clippado)
-      1: both   (=0)
-      2: right  (probabilidade [0,1] ou valor positivo clippado)
-    """
-    info = StreamInfo(name, stype, 3, srate, "float32", "graz_unified_v2")
+def make_outlet_unified(name: str, stype: str = "BCI", srate: float = 0.0) -> StreamOutlet:
+    info = StreamInfo(name, stype, 5, srate, "float32")
     desc = info.desc().append_child("channels")
-    for lab, unit in [("left", "a.u."), ("both", "a.u."), ("right", "a.u.")]:
+
+    for lab in ["pca1", "pca2", "left", "both", "right"]:
         ch = desc.append_child("channel")
         ch.append_child_value("label", lab)
-        ch.append_child_value("unit", unit)
+        ch.append_child_value("unit", "a.u.")
         ch.append_child_value("type", "BCI")
-    return StreamOutlet(info)
 
+    return StreamOutlet(info)
 
 def get_lsl_channel_names(info: StreamInfo) -> List[str]:
     """
@@ -293,6 +279,7 @@ def run_realtime_decoder(
     cfg: AppConfig,
     mode: str = "realtime",
     model_prefix: Optional[str] = None,
+    stop_event: Optional[threading.Event] = None,
 ):
     """
     Etapa 3 - Inferência em tempo-real.
@@ -301,6 +288,9 @@ def run_realtime_decoder(
     - `model_prefix`: opcional. Se None, procura o classificador mais recente
       na pasta 'train' da mesma sessão.
     """
+    if stop_event is None:
+        stop_event = threading.Event()
+
     decfg = cfg.decoder
     mcfg  = cfg.model
 
@@ -370,7 +360,7 @@ def run_realtime_decoder(
     log("Rodando (Ctrl+C para sair) ...")
 
     try:
-        while True:
+        while not stop_event.is_set():
             data, ts = inlet.pull_chunk(timeout=0.2, max_samples=8 * hop_n)
 
             # envia o último vetor na taxa desejada (quando desacoplado)
@@ -446,7 +436,7 @@ def run_realtime_decoder(
                         both = 0.0
 
                     # Vetor unificado para o outlet
-                    latest_vec  = [-right, -right, left]
+                    latest_vec = [p1, p2, left, both, right]
                     print(right, left)
 
                     t_out       = float(t_win[-1])
@@ -475,6 +465,7 @@ def run_realtime_decoder(
 
     except KeyboardInterrupt:
         log("Interrompido pelo usuário.")
+        stop_event.set()
     finally:
         try:
             fcsv.close()
