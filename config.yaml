@@ -8,9 +8,9 @@
 # Identificação da sessão
 # -----------------------------
 experiment:
-  subject_id:      "TT000"
-  session_id:      2
-  log_root:        "C:/Users/User/Desktop/Dados"
+  subject_id:      "SY001"
+  session_id:      3
+  log_root:        "C:/Users/Unifesp/Desktop/Dados Seidi"
   exp_name:        "TEST"
   session_type:    "IM_treino"       # opções: EM_treino, IM_treino, IM_online
 
@@ -29,10 +29,10 @@ lsl:
 # Fluxo do protocolo
 # -----------------------------
 runtime:
-  simulate_signal: true               # opções: true, false
+  simulate_signal: false               # opções: true, false
 
 protocol:
-  start_phase:             "execution"  # opções: execution, imagery, online
+  start_phase:             "imagery"  # opções: execution, imagery, online
   block_end_code:          99
   block_end_label:         "BLOCK_END"
   motor_session_type:      "EM_treino"
@@ -46,13 +46,30 @@ protocol:
   realtime_plot_script:    "plot_decoder_realtime.py"
   realtime_plot_new_console: true        # opções: true, false
 
+
+# -----------------------------
+# g.HIamp real via g.NeedAccess
+# -----------------------------
+# Usado apenas quando runtime.simulate_signal = false.
+# A configuração abaixo adquire 16 entradas físicas, usa CH16 como referência
+# de software, remove CH16 do stream publicado e aplica CAR nos 15 canais EEG.
+hiamp:
+  gtec_root:                 "D:/Documentos/gtec/gNEEDaccessClientAPI"
+  chunk:                     10
+  acquisition_channels:      16        # entradas físicas do g.HIamp
+  reference_channel:         16        # CH16 = eletrodo de referência
+  reference_mode:            "car"     # opções: none, channel, car
+  drop_reference_channel:    true      # publica apenas CH1..CH15 após CAR
+
+
 # =============================================================================
 # Parâmetros globais do sinal e da pipeline
 # =============================================================================
 # Frequência única de todo o pipeline. O simulado, o treino e o online devem
 # trabalhar nessa mesma taxa para evitar discrepâncias de janela/filtro.
 fs_hz:             256.0
-n_channels:        16
+# Canais EEG efetivos depois de remover CH16 e aplicar CAR.
+n_channels:        15
 
 # Duração do período ATTEMPT no TREINO. O online não usa trials; ele apenas
 # infere continuamente a última janela de window_s segundos.

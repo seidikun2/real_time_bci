@@ -28,19 +28,39 @@ COLOR = {
 }
 
 
+def _split_marker_name(fname: str):
+    import re
+    m = re.match(r"^(?P<prefix>.+)_markers_(?P<run_id>\d{8}_\d{6})\.csv$", fname)
+    if not m:
+        return None
+    return m.group("prefix"), m.group("run_id")
+
+
 def find_marker_signal_pairs(folder: str):
-    markers = glob.glob(os.path.join(folder, "*markers_*.csv"))
-    pairs = []
+    markers      = glob.glob(os.path.join(folder, "*markers_*.csv"))
+    exact_pairs  = []
+    legacy_pairs = []
+
     for m in markers:
         base_m = os.path.basename(m)
+        parsed = _split_marker_name(base_m)
+
+        if parsed is not None:
+            prefix, run_id = parsed
+            s = os.path.join(os.path.dirname(m), f"{prefix}_signal_{run_id}.csv")
+            if os.path.exists(s):
+                exact_pairs.append((m, s))
+            continue
+
         if "_markers_" not in base_m:
             continue
         prefix, _ = base_m.split("_markers_", 1)
         sig_files = glob.glob(os.path.join(folder, prefix + "_signal_*.csv"))
         if sig_files:
-            pairs.append((m, max(sig_files, key=os.path.getmtime)))
-    return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
+            legacy_pairs.append((m, max(sig_files, key=os.path.getmtime)))
 
+    pairs = exact_pairs if exact_pairs else legacy_pairs
+    return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
 
 def choose_pair(folder: str):
     pairs = find_marker_signal_pairs(folder)

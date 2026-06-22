@@ -7,7 +7,8 @@ import yaml
 from pylsl import StreamInlet, resolve_byprop
 from config_models            import load_config, AppConfig
 from online_inference         import run_realtime_decoder
-from realtime_signal_transmit import run_transmission
+from realtime_signal_transmit import run_transmission as run_sim_transmission
+from input_hiamp              import run_transmission as run_hiamp_transmission
 from receive_data_log         import run_receive
 from decoder_calibration      import run_calibration as run_decoder_calibration
 from check_data               import run_check_data
@@ -88,26 +89,50 @@ def data_dir(cfg: AppConfig, session_type: str, mode: str) -> Path:
     return Path(cfg.experiment.log_root) / cfg.experiment.subject_id / f"S{cfg.experiment.session_id}" / session_type / mode
 
 
+def _split_marker_name(fname: str) -> tuple[str, str] | None:
+    """
+    Retorna (prefixo, run_id) para nomes no formato:
+      <prefixo>_markers_YYYYMMDD_HHMMSS.csv
+    """
+    m = re.match(r"^(?P<prefix>.+)_markers_(?P<run_id>\d{8}_\d{6})\.csv$", fname)
+    if not m:
+        return None
+    return m.group("prefix"), m.group("run_id")
+
+
 def find_marker_signal_pairs(folder: Path) -> list[tuple[str, str]]:
     if not folder.exists():
         return []
 
+    exact_pairs: list[tuple[str, str]] = []
+    legacy_pairs: list[tuple[str, str]] = []
+
     markers = glob.glob(str(folder / "*markers_*.csv"))
-    pairs   = []
 
     for m in markers:
-        base_m = os.path.basename(m)
-        if "_markers_" not in base_m:
+        marker_path = Path(m)
+        parsed      = _split_marker_name(marker_path.name)
+
+        if parsed is not None:
+            prefix, run_id = parsed
+            signal_path    = marker_path.parent / f"{prefix}_signal_{run_id}.csv"
+            if signal_path.exists():
+                exact_pairs.append((str(marker_path), str(signal_path)))
             continue
 
+        # Compatibilidade com arquivos antigos fora do padrão run_id.
+        # Não é usado quando existem pares exatos, para evitar pareamento cruzado.
+        base_m = marker_path.name
+        if "_markers_" not in base_m:
+            continue
         prefix, _ = base_m.split("_markers_", 1)
-        sig_files = glob.glob(str(folder / f"{prefix}_signal_*.csv"))
+        sig_files = glob.glob(str(marker_path.parent / f"{prefix}_signal_*.csv"))
         if sig_files:
             s = max(sig_files, key=os.path.getmtime)
-            pairs.append((m, s))
+            legacy_pairs.append((str(marker_path), s))
 
+    pairs = exact_pairs if exact_pairs else legacy_pairs
     return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
-
 
 def pair_key(pair: tuple[str, str]) -> tuple[str, str]:
     return (os.path.abspath(pair[0]), os.path.abspath(pair[1]))
@@ -188,9 +213,10 @@ def run_block(cfg: AppConfig, raw: dict, label: str, mode: str, decoder: bool = 
 
     if cfg.runtime.simulate_signal:
         print(">> MODO TESTE: iniciando transmissão simulada por LSL.")
-        start_thread(threads, run_transmission, cfg, mode, stop_event)
+        start_thread(threads, run_sim_transmission, cfg, mode, stop_event)
     else:
-        print(">> MODO REAL: esperando sinal EEG já disponível por LSL.")
+        print(">> MODO REAL: iniciando aquisição g.HIamp via input_hiamp.py e publicando em LSL.")
+        start_thread(threads, run_hiamp_transmission, cfg, mode, stop_event)
 
     start_thread(threads, run_receive, cfg, mode, stop_event)
 
@@ -412,8 +438,8 @@ def start_realtime_plot(cfg: AppConfig, raw: dict, model_prefix: str | None = No
     cmd = [
         sys.executable,
         str(script),
-        "--decoder-name", p.get("decoder_debug_name", "GrazMI_DecoderDebug"),
-        "--decoder-type", p.get("decoder_debug_type", "BCI"),
+        "--decoder-name", p.get("decoder_debug_name", getattr(cfg.decoder, "outlet_name", "Signal")),
+        "--decoder-type", p.get("decoder_debug_type", getattr(cfg.decoder, "outlet_type", "BCI")),
         "--marker-name", getattr(cfg.lsl, "marker_name", "GrazMI_Markers"),
         "--marker-type", getattr(cfg.lsl, "marker_type", "Markers"),
     ]
