@@ -1,5 +1,5 @@
 # main.py
-import copy, glob, os, re, tempfile, threading, time
+import copy, glob, inspect, json, os, re, subprocess, sys, tempfile, threading, time
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +13,15 @@ from decoder_calibration      import run_calibration as run_decoder_calibration
 from check_data               import run_check_data
 
 YES = {"s", "sim", "y", "yes"}
+NO  = {"n", "nao", "não", "no"}
+
+PHASE_ORDER   = ["execution", "imagery", "online"]
+PHASE_ALIASES = {
+    "execution": "execution", "execucao": "execution", "execução": "execution", "motor": "execution", "em": "execution", "treino_em": "execution",
+    "imagery": "imagery", "imagetica": "imagery", "imagética": "imagery", "mi": "imagery", "im": "imagery", "treino_im": "imagery",
+    "online": "online", "realtime": "online", "tempo_real": "online",
+}
+
 
 def ask(msg: str, default: bool = False) -> bool:
     suf = "[S/n]" if default else "[s/N]"
@@ -22,9 +31,24 @@ def ask(msg: str, default: bool = False) -> bool:
             return default
         if ans in YES:
             return True
-        if ans in {"n", "nao", "não", "no"}:
+        if ans in NO:
             return False
         print("Responda apenas com s ou n.")
+
+
+def ask_choice(msg: str, choices: dict[str, str], default: str) -> str:
+    opts = "/".join([k.upper() if k == default else k for k in choices])
+    while True:
+        print(msg)
+        for k, v in choices.items():
+            print(f"  [{k}] {v}")
+        ans = input(f"Escolha [{opts}]: ").strip().lower()
+        if ans == "":
+            ans = default
+        if ans in choices:
+            return ans
+        print("Opção inválida.")
+
 
 def load_cfg(path: Path):
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -32,7 +56,7 @@ def load_cfg(path: Path):
         return load_config(path), raw
     except Exception:
         clean = {k: v for k, v in raw.items() if k != "protocol"}
-        tmp = None
+        tmp   = None
         try:
             with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False, encoding="utf-8") as f:
                 yaml.safe_dump(clean, f, sort_keys=False, allow_unicode=True)
@@ -42,13 +66,70 @@ def load_cfg(path: Path):
             if tmp:
                 os.remove(tmp)
 
+
+def protocol(raw: dict) -> dict:
+    return raw.get("protocol", {}) or {}
+
+
 def set_session_type(cfg: AppConfig, session_type: str) -> AppConfig:
-    cfg = copy.deepcopy(cfg)
+    cfg                         = copy.deepcopy(cfg)
     cfg.experiment.session_type = session_type
     return cfg
 
+
+def normalize_phase(value: str) -> str:
+    key = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if key not in PHASE_ALIASES:
+        raise ValueError(f"start_phase inválido: {value}. Use execution, imagery ou online.")
+    return PHASE_ALIASES[key]
+
+
+def data_dir(cfg: AppConfig, session_type: str, mode: str) -> Path:
+    return Path(cfg.experiment.log_root) / cfg.experiment.subject_id / f"S{cfg.experiment.session_id}" / session_type / mode
+
+
+def find_marker_signal_pairs(folder: Path) -> list[tuple[str, str]]:
+    if not folder.exists():
+        return []
+
+    markers = glob.glob(str(folder / "*markers_*.csv"))
+    pairs   = []
+
+    for m in markers:
+        base_m = os.path.basename(m)
+        if "_markers_" not in base_m:
+            continue
+
+        prefix, _ = base_m.split("_markers_", 1)
+        sig_files = glob.glob(str(folder / f"{prefix}_signal_*.csv"))
+        if sig_files:
+            s = max(sig_files, key=os.path.getmtime)
+            pairs.append((m, s))
+
+    return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
+
+
+def pair_key(pair: tuple[str, str]) -> tuple[str, str]:
+    return (os.path.abspath(pair[0]), os.path.abspath(pair[1]))
+
+
+def detect_current_pair(folder: Path, before: list[tuple[str, str]], started_at: float) -> tuple[str, str] | None:
+    after       = find_marker_signal_pairs(folder)
+    before_keys = {pair_key(p) for p in before}
+    new_pairs   = [p for p in after if pair_key(p) not in before_keys]
+
+    if new_pairs:
+        return new_pairs[0]
+
+    fresh_pairs = [p for p in after if os.path.getmtime(p[1]) >= started_at - 2.0]
+    if fresh_pairs:
+        return fresh_pairs[0]
+
+    return after[0] if after else None
+
+
 def stop_targets(raw: dict) -> set[str]:
-    p = raw.get("protocol", {}) or {}
+    p = protocol(raw)
     values = [
         p.get("block_end_code"),
         p.get("block_end_label"),
@@ -56,14 +137,16 @@ def stop_targets(raw: dict) -> set[str]:
     ]
     return {str(v).strip() for v in values if v is not None}
 
+
 def marker_is_stop(value, targets: set[str]) -> bool:
-    txt = str(value).strip()
+    txt        = str(value).strip()
     candidates = {txt}
     try:
         candidates.add(str(int(float(txt))))
     except Exception:
         pass
     return bool(candidates & targets)
+
 
 def wait_psychopy_stop(cfg: AppConfig, targets: set[str], stop_event: threading.Event) -> None:
     name  = getattr(cfg.lsl, "marker_name", "")
@@ -88,14 +171,17 @@ def wait_psychopy_stop(cfg: AppConfig, targets: set[str], stop_event: threading.
             stop_event.set()
             return
 
+
 def start_thread(threads: list, target, *args, **kwargs) -> None:
     th = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
     threads.append(th)
     th.start()
 
-def run_block(cfg: AppConfig, raw: dict, label: str, mode: str, decoder: bool = False, model_prefix: str | None = None) -> None:
+
+def run_block(cfg: AppConfig, raw: dict, label: str, mode: str, decoder: bool = False, model_prefix: str | None = None) -> dict:
     print(f"\n=== {label} | {cfg.experiment.session_type} | mode={mode} ===")
 
+    started_at = time.time()
     stop_event = threading.Event()
     threads    = []
     targets    = stop_targets(raw)
@@ -109,7 +195,7 @@ def run_block(cfg: AppConfig, raw: dict, label: str, mode: str, decoder: bool = 
     start_thread(threads, run_receive, cfg, mode, stop_event)
 
     if decoder:
-        start_thread(threads, run_realtime_decoder, cfg, mode = mode, model_prefix = model_prefix, stop_event = stop_event,)
+        start_thread(threads, run_realtime_decoder, cfg, mode=mode, model_prefix=model_prefix, stop_event=stop_event)
 
     if targets:
         start_thread(threads, wait_psychopy_stop, cfg, targets, stop_event)
@@ -126,67 +212,311 @@ def run_block(cfg: AppConfig, raw: dict, label: str, mode: str, decoder: bool = 
     for th in threads:
         th.join(timeout=5.0)
 
+    ended_at = time.time()
     print("[main] Bloco encerrado.")
+    return {"started_at": started_at, "ended_at": ended_at}
 
-def run_training_stage(cfg: AppConfig, raw: dict, label: str, session_type: str) -> None:
+
+def cv_mean(res: dict) -> float:
+    accs = res.get("accs_cv", []) if isinstance(res, dict) else []
+    return float(np.mean(accs)) if len(accs) else float("nan")
+
+
+def run_check_same_pair(cfg: AppConfig, raw: dict, markers_file: str, signal_file: str) -> None:
+    if not protocol(raw).get("auto_check_data", True):
+        return
+
+    print("\n[main] Gerando checks automáticos no mesmo bloco...")
+    sig    = inspect.signature(run_check_data)
+    params = sig.parameters
+    kwargs = {}
+
+    for key in ("markers_file", "marker_file", "markers_csv", "mark_explicit"):
+        if key in params:
+            kwargs[key] = markers_file
+            break
+
+    for key in ("signal_file", "signal_csv", "sig_explicit"):
+        if key in params:
+            kwargs[key] = signal_file
+            break
+
+    try:
+        if kwargs:
+            run_check_data(cfg, **kwargs)
+        else:
+            print("[main] run_check_data não expõe parâmetros de arquivo; usando o comportamento padrão do módulo.")
+            run_check_data(cfg)
+    except Exception as exc:
+        print(f"[main] check_data falhou: {type(exc).__name__}: {exc}")
+
+
+def train_and_check_current_block(cfg: AppConfig, raw: dict, pair: tuple[str, str] | None) -> dict:
+    if pair is None:
+        print("[main] Não encontrei o par markers/signal recém-gravado; calibração não executada.")
+        return {"acc_mean": float("nan"), "res": None}
+
+    markers_file, signal_file = pair
+    print("\n[main] Treinando classificador no bloco recém-gravado:")
+    print(f"  markers: {os.path.basename(markers_file)}")
+    print(f"  signal : {os.path.basename(signal_file)}")
+
+    try:
+        res      = run_decoder_calibration(cfg, markers_file=markers_file, signal_file=signal_file)
+        acc_mean = cv_mean(res)
+        print(f"[main] Acurácia média CV do bloco = {acc_mean:.3f}")
+    except Exception as exc:
+        print(f"[main] Calibração falhou: {type(exc).__name__}: {exc}")
+        return {"acc_mean": float("nan"), "res": None}
+
+    run_check_same_pair(cfg, raw, markers_file, signal_file)
+    return {"acc_mean": acc_mean, "res": res}
+
+
+def default_training_action(raw: dict, acc_mean: float) -> str:
+    threshold = protocol(raw).get("min_cv_accuracy", None)
+    if threshold is None or not np.isfinite(acc_mean):
+        return "r" if not np.isfinite(acc_mean) else "s"
+    return "s" if acc_mean >= float(threshold) else "r"
+
+
+def post_training_action(label: str, raw: dict, acc_mean: float) -> str:
+    threshold = protocol(raw).get("min_cv_accuracy", None)
+    crit      = f" | critério={float(threshold):.2f}" if threshold is not None else ""
+    acc_txt   = "nan" if not np.isfinite(acc_mean) else f"{acc_mean:.3f}"
+    default   = default_training_action(raw, acc_mean)
+
+    return ask_choice(
+        f"\nResultado {label}: CV={acc_txt}{crit}. O que fazer agora?",
+        {"r": "refazer este bloco", "s": "seguir para a próxima fase", "f": "finalizar a sessão"},
+        default=default,
+    )
+
+
+def run_training_stage(cfg: AppConfig, raw: dict, label: str, session_type: str) -> str:
     cfg_stage = set_session_type(cfg, session_type)
-    rep = 1
-    while ask(f"Rodar {label} {rep}?", default=(rep == 1)):
-        run_block(cfg_stage, raw, label=label, mode="train")
-        rep += 1
+    folder    = data_dir(cfg_stage, session_type, "train")
+    existing  = find_marker_signal_pairs(folder)
 
-def run_calibration(cfg: AppConfig, raw: dict, session_type: str) -> None:
-    cfg_cal = set_session_type(cfg, session_type)
-    print(f"\n=== Calibração | {session_type} ===")
+    if existing:
+        print(f"\n[main] Detectei {len(existing)} bloco(s) prévio(s) em {folder}.")
+        print("[main] O próximo bloco será tratado como continuação/repetição desta sessão.")
 
-    res      = run_decoder_calibration(cfg_cal)
-    acc_mean = float(np.mean(res["accs_cv"])) if res.get("accs_cv") else float("nan")
-    print(f"[main] Acurácia média CV ~ {acc_mean:.3f}")
+    block_n = len(existing) + 1
 
-    if ask("Visualizar os dados com check_data?", default=False):
-        run_check_data(cfg_cal)
+    while True:
+        if not ask(f"Iniciar {label} bloco {block_n}?", default=True):
+            return "stop"
 
-def latest_model_prefix(cfg: AppConfig, session_type: str) -> str:
-    train_dir = Path(cfg.experiment.log_root) / cfg.experiment.subject_id / f"S{cfg.experiment.session_id}" / session_type / "train"
-    cands = glob.glob(str(train_dir / "*_classifier.pkl"))
-    if not cands:
-        raise FileNotFoundError(f"Não encontrei classificador em:\n  {train_dir}")
-    return re.sub(r"_classifier\.pkl$", "", max(cands, key=os.path.getmtime))
+        before = find_marker_signal_pairs(folder)
+        info   = run_block(cfg_stage, raw, label=f"{label} {block_n}", mode="train")
+        pair   = detect_current_pair(folder, before, info["started_at"])
+        out    = train_and_check_current_block(cfg_stage, raw, pair)
+        action = post_training_action(label, raw, out["acc_mean"])
 
-def run_online_stage(cfg: AppConfig, raw: dict, online_type: str, model_type: str) -> None:
+        if action == "r":
+            block_n += 1
+            continue
+        if action == "s":
+            return "next"
+        return "stop"
+
+
+def read_model_meta(prefix: str) -> dict:
+    meta_path = prefix + "_meta.json"
+    if not os.path.exists(meta_path):
+        return {}
+    try:
+        with open(meta_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def model_session_types(raw: dict, em_type: str, im_type: str) -> list[str]:
+    p   = protocol(raw)
+    val = p.get("model_session_types", None)
+
+    if val is None:
+        val = [p.get("model_session_type", im_type), em_type, im_type]
+    elif isinstance(val, str):
+        val = [val]
+
+    out = []
+    for item in val:
+        if item and item not in out:
+            out.append(item)
+    return out
+
+
+def list_model_prefixes(cfg: AppConfig, session_types: list[str]) -> list[dict]:
+    rows = []
+    for session_type in session_types:
+        folder = data_dir(cfg, session_type, "train")
+        for clf_path in glob.glob(str(folder / "*_classifier.pkl")):
+            prefix = re.sub(r"_classifier\.pkl$", "", clf_path)
+            meta   = read_model_meta(prefix)
+            acc    = ((meta.get("cv", {}) or {}).get("acc_mean", None)) if meta else None
+            rows.append({
+                "session_type": session_type,
+                "prefix":       prefix,
+                "clf_path":     clf_path,
+                "acc":          acc,
+                "mtime":        os.path.getmtime(clf_path),
+            })
+
+    rows.sort(key=lambda r: r["mtime"], reverse=True)
+    return rows
+
+
+def choose_model_prefix(cfg: AppConfig, raw: dict, em_type: str, im_type: str) -> str:
+    p = protocol(raw)
+
+    explicit = p.get("online_model_prefix", None)
+    if explicit and str(explicit).lower() not in {"ask", "latest", "auto"}:
+        return str(explicit)
+
+    rows = list_model_prefixes(cfg, model_session_types(raw, em_type, im_type))
+    if not rows:
+        raise FileNotFoundError("Não encontrei nenhum *_classifier.pkl para iniciar o online.")
+
+    if explicit in {"latest", "auto"}:
+        chosen = rows[0]
+        print(f"[main] Classificador online automático: {chosen['prefix']}")
+        return chosen["prefix"]
+
+    print("\n===== CLASSIFICADORES DISPONÍVEIS PARA O ONLINE =====")
+    for i, row in enumerate(rows, start=1):
+        acc_txt = "sem CV" if row["acc"] is None else f"CV={float(row['acc']):.3f}"
+        stamp   = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row["mtime"]))
+        print(f"  [{i}] {row['session_type']} | {acc_txt} | {stamp} | {os.path.basename(row['prefix'])}")
+
+    while True:
+        ans = input("Escolha o classificador [1 = mais recente]: ").strip()
+        idx = 1 if ans == "" else int(ans) if ans.isdigit() else -1
+        if 1 <= idx <= len(rows):
+            return rows[idx - 1]["prefix"]
+        print("Número inválido.")
+
+
+def start_realtime_plot(cfg: AppConfig, raw: dict, model_prefix: str | None = None) -> subprocess.Popen | None:
+    p = protocol(raw)
+    if not p.get("realtime_plot", False):
+        return None
+
+    script = Path(__file__).resolve().parent / p.get("realtime_plot_script", "plot_decoder_realtime.py")
+    if not script.exists():
+        print(f"[main] Plot realtime habilitado, mas script não encontrado: {script}")
+        return None
+
+    cmd = [
+        sys.executable,
+        str(script),
+        "--decoder-name", p.get("decoder_debug_name", "GrazMI_DecoderDebug"),
+        "--decoder-type", p.get("decoder_debug_type", "BCI"),
+        "--marker-name", getattr(cfg.lsl, "marker_name", "GrazMI_Markers"),
+        "--marker-type", getattr(cfg.lsl, "marker_type", "Markers"),
+    ]
+
+    if p.get("realtime_plot_no_markers", False):
+        cmd.append("--no-markers")
+    if p.get("realtime_plot_hz", None) is not None:
+        cmd += ["--plot-hz", str(p["realtime_plot_hz"])]
+    if p.get("realtime_plot_window_s", None) is not None:
+        cmd += ["--time-window", str(p["realtime_plot_window_s"])]
+
+    meta = read_model_meta(model_prefix) if model_prefix else {}
+    xlim = meta.get("pca_train_xlim", None)
+    ylim = meta.get("pca_train_ylim", None)
+    if xlim and ylim:
+        cmd += ["--pca-xlim", str(xlim[0]), str(xlim[1]), "--pca-ylim", str(ylim[0]), str(ylim[1])]
+
+    print("[main] Abrindo plot_decoder_realtime em processo Python próprio.")
+    creationflags = 0
+    if os.name == "nt" and p.get("realtime_plot_new_console", True):
+        creationflags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+    return subprocess.Popen(cmd, creationflags=creationflags)
+
+
+def stop_realtime_plot(proc: subprocess.Popen | None) -> None:
+    if proc is None or proc.poll() is not None:
+        return
+
+    proc.terminate()
+    try:
+        proc.wait(timeout=3.0)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def post_online_action(label: str) -> str:
+    return ask_choice(
+        f"\n{label} encerrado. O que fazer agora?",
+        {"r": "refazer online", "f": "finalizar a sessão"},
+        default="r",
+    )
+
+
+def run_online_stage(cfg: AppConfig, raw: dict, online_type: str, model_prefix: str) -> str:
     cfg_online = set_session_type(cfg, online_type)
-    rep = 1
-    while ask(f"Rodar online {rep}?", default=(rep == 1)):
-        model_prefix = latest_model_prefix(cfg, model_type)
-        run_block(cfg_online, raw, label="Online", mode="realtime", decoder=True, model_prefix=model_prefix)
-        rep += 1
+    folder     = data_dir(cfg_online, online_type, "realtime")
+    existing   = find_marker_signal_pairs(folder)
+
+    if existing:
+        print(f"\n[main] Detectei {len(existing)} bloco(s) online prévio(s) em {folder}.")
+        print("[main] O próximo bloco será tratado como continuação/repetição desta sessão.")
+
+    block_n = len(existing) + 1
+
+    while True:
+        if not ask(f"Iniciar online bloco {block_n}?", default=True):
+            return "stop"
+
+        plot_proc = start_realtime_plot(cfg_online, raw, model_prefix=model_prefix)
+        try:
+            run_block(cfg_online, raw, label=f"Online {block_n}", mode="realtime", decoder=True, model_prefix=model_prefix)
+        finally:
+            stop_realtime_plot(plot_proc)
+
+        action = post_online_action("Online")
+        if action == "r":
+            block_n += 1
+            continue
+        return "stop"
+
 
 def main() -> None:
     cfg, raw    = load_cfg(Path(__file__).resolve().parent / "config.yaml")
-    p           = raw.get("protocol", {}) or {}
+    p           = protocol(raw)
     em_type     = p.get("motor_session_type",   "EM_treino")
     im_type     = p.get("imagery_session_type", "IM_treino")
     online_type = p.get("online_session_type",  "IM_online")
-    model_type  = p.get("model_session_type",   im_type)
+    start_phase = normalize_phase(p.get("start_phase", "execution"))
 
     print("\n===== PROTOCOLO =====")
     print(f"Sujeito: {cfg.experiment.subject_id} | Sessão: S{cfg.experiment.session_id}")
-    print(f"Marcador de fim: {sorted(stop_targets(raw))}\n")
+    print(f"Fase inicial: {start_phase}")
+    print(f"Marcador de fim: {sorted(stop_targets(raw))}")
+    print("Fluxo: execução motora → imagética motora → online\n")
 
-    run_training_stage(cfg, raw, "Treino EM", em_type)
+    phases = PHASE_ORDER[PHASE_ORDER.index(start_phase):]
 
-    if not ask("Continuar para treino IM?", default=True):
-        return
-    run_training_stage(cfg, raw, "Treino IM", im_type)
+    if "execution" in phases:
+        if run_training_stage(cfg, raw, "Execução motora", em_type) == "stop":
+            print("\n[main] Sessão finalizada após execução motora.")
+            return
 
-    if ask("Calibrar modelo agora?", default=True):
-        run_calibration(cfg, raw, im_type)
+    if "imagery" in phases:
+        if run_training_stage(cfg, raw, "Imagética motora", im_type) == "stop":
+            print("\n[main] Sessão finalizada após imagética motora.")
+            return
 
-    if not ask("Continuar para online?", default=True):
-        return
-    run_online_stage(cfg, raw, online_type, model_type)
+    if "online" in phases:
+        model_prefix = choose_model_prefix(cfg, raw, em_type, im_type)
+        run_online_stage(cfg, raw, online_type, model_prefix)
 
     print("\n[main] Protocolo finalizado.")
+
 
 if __name__ == "__main__":
     main()

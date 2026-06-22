@@ -1,52 +1,112 @@
+# =============================================================================
+# BCI real-time protocol config
+# =============================================================================
+# Os parâmetros abaixo são globais: o mesmo valor é usado no sinal simulado,
+# no treino do classificador, no check_data e na inferência online.
+
+# -----------------------------
+# Identificação da sessão
+# -----------------------------
 experiment:
   subject_id:      "TT000"
-  session_id:      1
+  session_id:      2
   log_root:        "C:/Users/User/Desktop/Dados"
   exp_name:        "TEST"
-  session_type:    "IM_treino"   # valor base; o main muda por etapa
+  session_type:    "IM_treino"       # opções: EM_treino, IM_treino, IM_online
 
+# -----------------------------
+# Streams LSL
+# -----------------------------
 lsl:
   marker_name:     "GrazMI_Markers"
   marker_type:     "Markers"
   signal_name:     "gHIamp_EEG"
   signal_type:     "EEG"
+  decoder_name:    "Signal"
+  decoder_type:    "BCI"
 
+# -----------------------------
+# Fluxo do protocolo
+# -----------------------------
 runtime:
-  simulate_signal: true           # true = TX simulado + RX; false = apenas RX/hardware real
+  simulate_signal: true               # opções: true, false
 
-# ----------------- PROTOCOLO -----------------
-# O fluxo agora é controlado pelo main:
-# 1) treino EM
-# 2) treino IM
-# 3) calibração
-# 4) online
-# Cada bloco termina quando o PsychoPy envia block_end_code.
 protocol:
-  block_end_code:       99
-  block_end_label:      "BLOCK_END"
+  start_phase:             "execution"  # opções: execution, imagery, online
+  block_end_code:          99
+  block_end_label:         "BLOCK_END"
+  motor_session_type:      "EM_treino"
+  imagery_session_type:    "IM_treino"
+  online_session_type:     "IM_online"
+  min_cv_accuracy:         null          # exemplo: 0.70; null = decisão manual
+  auto_check_data:         true          # opções: true, false
+  online_model_prefix:     "ask"         # opções: ask, latest, auto, ou prefixo explícito
+  model_session_types:     ["EM_treino", "IM_treino"]
+  realtime_plot:           true          # opções: true, false
+  realtime_plot_script:    "plot_decoder_realtime.py"
+  realtime_plot_new_console: true        # opções: true, false
 
-  motor_session_type:   "EM_treino"
-  imagery_session_type: "IM_treino"
-  online_session_type:  "IM_online"
-  model_session_type:   "IM_treino"
+# =============================================================================
+# Parâmetros globais do sinal e da pipeline
+# =============================================================================
+# Frequência única de todo o pipeline. O simulado, o treino e o online devem
+# trabalhar nessa mesma taxa para evitar discrepâncias de janela/filtro.
+fs_hz:             256.0
+n_channels:        16
 
-# ----------------- SINAL SIMULADO (TX) -----------------
-sim_signal:
-  fs:              128.0
-  channels:        16
-  chunk:           10
-  noise_std:       0.8
+# Duração do período ATTEMPT no TREINO. O online não usa trials; ele apenas
+# infere continuamente a última janela de window_s segundos.
+trial_duration_s:  3.75
+trial_offset_s:    0.0
 
-sim_burst:
-  freq:            10.0
-  amp:             1.5
-  dur:             3.5
-  taper_frac:      0.2
+# Janela de feature. O treino extrai janelas de window_s dentro de cada trial;
+# o online usa a última janela contínua de window_s.
+window_s:          1.0
+step_s:            0.05
 
-sim_profiles:
-  left_mi:         [1.0, 0.3]
-  right_mi:        [0.3, 1.0]
+# Filtro temporal comum ao treino, check e online.
+filter_mode:       "causal"             # opções: causal, zero_phase_offline
+bp_order:          3
+bp_band_hz:        [5.0, 40.0]
 
+# Canais. Lista vazia = todos. Índices por padrão são base-1.
+select_by:         "index"              # opções: index, name
+index_base:        1                     # opções: 0, 1
+select_channels:   []                    # exemplo: [1, 2, 4, 5, 7, 9, 10]
+
+# Modelo.
+feature_space:     "riemann_pca"        # opções: riemann_pca
+classifier:        "svm_linear"         # opções: svm_linear
+pca_dim:           2
+svc_c:             1.0
+cv_splits:         5
+rng_seed:          42
+
+# Saída do decoder.
+decoder_outlet_name: "Signal"
+decoder_outlet_type: "BCI"
+decoder_lsl_rate_hz: 64.0
+left_label:        null
+right_label:       null
+
+# Check/figuras.
+check_tmin_s:      -0.5
+check_save_png:    true                 # opções: true, false
+
+# =============================================================================
+# Simulação de sinal
+# =============================================================================
+sim_chunk:         10
+sim_noise_std:     0.8
+sim_burst_freq_hz: 10.0
+sim_burst_amp:     1.5
+sim_taper_frac:    0.2
+sim_profile_left_mi:  [1.0, 0.3]
+sim_profile_right_mi: [0.3, 1.0]
+
+# -----------------------------
+# Códigos de marcadores
+# -----------------------------
 codes:
   left_mi:         3
   right_mi:        4
@@ -60,41 +120,3 @@ codes:
     "5":           "ATTEMPT"
     "6":           "REST"
     "99":          "BLOCK_END"
-
-# ----------------- CALIBRAÇÃO DO DECODER -----------------
-model:
-  fs_hz:           128.0
-  bp_order:        4
-  bp_band:         [5.0, 50.0]
-  epoch_s:         2.5
-  trial_offset_s:  0.5
-  pca_dim:         2
-  svc_c:           1.0
-  rng_seed:        42
-  cv_splits:       5
-
-  select_by:       "index"
-  index_base:      1
-  select_channels: []
-
-# ----------------- CHECK_DATA -----------------
-check_data:
-  select_channels: [1, 2, 4, 5, 7, 9, 10]
-  hp_cutoff_hz:    0.5
-  hp_order:        4
-  classes:         ["LEFT_MI_STIM", "RIGHT_MI_STIM"]
-  tmin:            -0.5
-  tmax:            3.75
-  baseline_s:      0.0
-  save_png:        true
-
-# ----------------- DECODER EM TEMPO REAL -----------------
-decoder:
-  epoch_s:         2.5
-  step_s:          0.05
-  band_hz:         [5.0, 50.0]
-  filter_order:    4
-  outlet_name:     "Signal"
-  lsl_rate_hz:     50.0
-  left_label:      null
-  right_label:     null
