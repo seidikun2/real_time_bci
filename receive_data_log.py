@@ -6,20 +6,27 @@ from pylsl import resolve_byprop, StreamInlet, local_clock, StreamInfo
 from config_models import AppConfig
 
 
-def resolve_stream(name: str, stype: str, timeout: float = 4.0) -> StreamInfo:
-    streams = resolve_byprop("name", name, timeout=timeout)
-    if not streams:
-        streams = resolve_byprop("type", stype, timeout=timeout)
-    if not streams:
-        raise RuntimeError(f"Nenhum stream LSL encontrado (name='{name}' / type='{stype}').")
+def resolve_stream(name: str, stype: str, timeout: float = 2.0, stop_event: Optional[threading.Event] = None) -> StreamInfo:
+    label = f"name='{name}'" if name else f"type='{stype}'"
+    print(f"Procurando stream LSL ({label})...")
 
-    si = streams[0]
-    print(
-        f"Conectado: name={si.name()}, type={si.type()}, "
-        f"chn={si.channel_count()}, fmt={si.channel_format()}, "
-        f"fs={si.nominal_srate():.2f}"
-    )
-    return si
+    while stop_event is None or not stop_event.is_set():
+        streams = resolve_byprop("name", name, timeout=timeout) if name else []
+        if not streams and stype:
+            streams = resolve_byprop("type", stype, timeout=timeout)
+
+        if streams:
+            si = streams[0]
+            print(
+                f"Conectado: name={si.name()}, type={si.type()}, "
+                f"chn={si.channel_count()}, fmt={si.channel_format()}, "
+                f"fs={si.nominal_srate():.2f}"
+            )
+            return si
+
+        print(f"Stream LSL não encontrado ({label}). Tentando novamente...")
+
+    raise RuntimeError(f"Stop recebido antes de conectar ao stream LSL ({label}).")
 
 
 def make_log_dir(cfg: AppConfig, mode: str) -> str:
@@ -52,9 +59,9 @@ def get_block_end_code(cfg: AppConfig, code_map: dict) -> int:
     return int(inv.get("BLOCK_END", 99))
 
 
-def open_marker_logger(cfg: AppConfig, mode: str) -> Tuple:
+def open_marker_logger(cfg: AppConfig, mode: str, run_id: Optional[str] = None) -> Tuple:
     log_dir    = make_log_dir(cfg, mode)
-    ts_str     = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts_str     = run_id or dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     fname_base = (
         f"{cfg.experiment.subject_id}_"
         f"{cfg.experiment.exp_name}_"
@@ -73,9 +80,9 @@ def open_marker_logger(cfg: AppConfig, mode: str) -> Tuple:
     return f, w, fname
 
 
-def open_signal_logger(cfg: AppConfig, mode: str, channels: int) -> Tuple:
+def open_signal_logger(cfg: AppConfig, mode: str, channels: int, run_id: Optional[str] = None) -> Tuple:
     log_dir    = make_log_dir(cfg, mode)
-    ts_str     = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts_str     = run_id or dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     fname_base = (
         f"{cfg.experiment.subject_id}_"
         f"{cfg.experiment.exp_name}_"
@@ -118,18 +125,22 @@ def run_receive(cfg: AppConfig, mode: str = "train", stop_event: Optional[thread
     code_map       = normalize_code_map(cfg.codes.code_map)
     block_end_code = get_block_end_code(cfg, code_map)
 
-    si_mark        = resolve_stream(cfg.lsl.marker_name, cfg.lsl.marker_type)
+    si_mark        = resolve_stream(cfg.lsl.marker_name, cfg.lsl.marker_type, stop_event=stop_event)
     inlet_mark     = StreamInlet(si_mark, recover=True)
 
-    si_sig         = resolve_stream(cfg.lsl.signal_name, cfg.lsl.signal_type)
+    si_sig         = resolve_stream(cfg.lsl.signal_name, cfg.lsl.signal_type, stop_event=stop_event)
     inlet_sig      = StreamInlet(si_sig, recover=True)
     sig_channels   = si_sig.channel_count()
 
     unix_offset    = time.time() - local_clock()
+    run_id         = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    fM, wM, fnameM = open_marker_logger(cfg, mode)
-    fS, wS, fnameS = open_signal_logger(cfg, mode, sig_channels)
+    # O mesmo run_id é usado nos dois arquivos.
+    # Isso impede que o treino pareie marcadores de um bloco com sinal de outro bloco.
+    fM, wM, fnameM = open_marker_logger(cfg, mode, run_id=run_id)
+    fS, wS, fnameS = open_signal_logger(cfg, mode, sig_channels, run_id=run_id)
 
+    print(f"Arquivos do bloco run_id={run_id}")
     print("Aguardando dados... (stop_event controla o fim)")
     print("Códigos:", ", ".join(f"{k}={v}" for k, v in sorted(code_map.items())))
     print(f"Marcador de fim do bloco: {block_end_code}={code_map.get(block_end_code, 'BLOCK_END')}")

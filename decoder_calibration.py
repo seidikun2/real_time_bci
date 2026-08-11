@@ -50,20 +50,41 @@ def get_trial_duration_s(cfg: AppConfig) -> float:
 
 
 # ---------- arquivos ----------
+def _split_marker_name(fname: str) -> tuple[str, str] | None:
+    m = re.match(r"^(?P<prefix>.+)_markers_(?P<run_id>\d{8}_\d{6})\.csv$", fname)
+    if not m:
+        return None
+    return m.group("prefix"), m.group("run_id")
+
+
 def find_marker_signal_pairs(folder: str):
-    markers = glob.glob(os.path.join(folder, "*markers_*.csv"))
-    pairs   = []
+    markers      = glob.glob(os.path.join(folder, "*markers_*.csv"))
+    exact_pairs  = []
+    legacy_pairs = []
+
     for m in markers:
         base_m = os.path.basename(m)
+        parsed = _split_marker_name(base_m)
+
+        if parsed is not None:
+            prefix, run_id = parsed
+            s = os.path.join(os.path.dirname(m), f"{prefix}_signal_{run_id}.csv")
+            if os.path.exists(s):
+                exact_pairs.append((m, s))
+            continue
+
+        # Compatibilidade com arquivos antigos sem run_id compartilhado.
+        # Só é usada se não houver pares exatos no diretório.
         if "_markers_" not in base_m:
             continue
         prefix, _ = base_m.split("_markers_", 1)
-        sig_files = glob.glob(os.path.join(folder, prefix + "_signal_*.csv"))
+        sig_files = glob.glob(os.path.join(os.path.dirname(m), prefix + "_signal_*.csv"))
         if sig_files:
             s = max(sig_files, key=os.path.getmtime)
-            pairs.append((m, s))
-    return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
+            legacy_pairs.append((m, s))
 
+    pairs = exact_pairs if exact_pairs else legacy_pairs
+    return sorted(pairs, key=lambda p: os.path.getmtime(p[1]), reverse=True)
 
 def choose_pair(folder: str):
     pairs = find_marker_signal_pairs(folder)
@@ -138,6 +159,32 @@ def read_signal_csv(path: str) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     X  = df[ch_cols].apply(pd.to_numeric, errors="coerce").to_numpy(float)
     ok = np.isfinite(t) & np.all(np.isfinite(X), axis=1)
     return t[ok], X[ok, :], [str(c) for c in ch_cols]
+
+
+def check_time_overlap(t_mark: np.ndarray, t_sig: np.ndarray, trial_duration_s: float, window_s: float) -> None:
+    if len(t_mark) == 0:
+        raise ValueError("Arquivo de marcadores está vazio.")
+    if len(t_sig) == 0:
+        raise ValueError("Arquivo de sinal está vazio.")
+
+    marker_lo, marker_hi = float(np.nanmin(t_mark)), float(np.nanmax(t_mark))
+    signal_lo, signal_hi = float(np.nanmin(t_sig)), float(np.nanmax(t_sig))
+
+    print(f"[calib] marker range: {marker_lo:.6f}–{marker_hi:.6f}")
+    print(f"[calib] signal range : {signal_lo:.6f}–{signal_hi:.6f}")
+
+    overlap_start = max(marker_lo, signal_lo)
+    overlap_end   = min(marker_hi + float(trial_duration_s), signal_hi)
+    overlap_s     = overlap_end - overlap_start
+
+    if overlap_s < float(window_s):
+        raise ValueError(
+            "Marcadores e sinal não têm sobreposição temporal suficiente para janelar. "
+            f"Sobreposição útil={overlap_s:.3f}s, janela={float(window_s):.3f}s. "
+            "Provável pareamento errado de arquivos, stream de marcador antigo, ou PsychoPy iniciado antes do EEG/logger estar pronto."
+        )
+
+    print(f"[calib] sobreposição temporal útil: {overlap_s:.3f}s")
 
 
 # ---------- processamento ----------
@@ -340,6 +387,8 @@ def run_calibration(cfg: AppConfig, markers_file: Optional[str] = None, signal_f
 
     t_mark, labels       = read_markers_csv(markers_csv)
     t_sig, X_all, ch_all = read_signal_csv(signal_csv)
+
+    check_time_overlap(t_mark, t_sig, TRIAL_DURATION_S, WINDOW_S)
 
     sel_idx = select_channel_indices(SELECT_BY, SELECT_CHANNELS, ch_all, index_base=INDEX_BASE)
     ch_sel  = [ch_all[i] for i in sel_idx]

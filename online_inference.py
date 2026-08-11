@@ -240,7 +240,7 @@ def run_realtime_decoder(cfg: AppConfig, mode: str = "realtime", model_prefix: O
         raise ValueError("Janela muito curta.")
     log(f"Online contínuo: janela={window_s:.2f}s ({win_n} samples), step={step_s:.3f}s ({hop_n} samples), filtro causal")
 
-    outlet = make_outlet_unified(name=decfg.outlet_name, stype="BCI", srate=max(0.0, float(decfg.lsl_rate_hz)))
+    outlet = make_outlet_unified(name=decfg.outlet_name, stype=decfg.outlet_type, srate=max(0.0, float(decfg.lsl_rate_hz)))
     fcsv, wcsv, _ = open_csv_logger(cfg, mode)
     unix_offset = time.time() - local_clock()
 
