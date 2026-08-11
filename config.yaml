@@ -9,7 +9,7 @@
 # -----------------------------
 experiment:
   subject_id:      "TT000"
-  session_id:      2
+  session_id:      1
   log_root:        "C:/Users/User/Desktop/Dados"
   exp_name:        "TEST"
   session_type:    "IM_treino"       # opções: EM_treino, IM_treino, IM_online
@@ -32,7 +32,7 @@ runtime:
   simulate_signal: true               # opções: true, false
 
 protocol:
-  start_phase:             "execution"  # opções: execution, imagery, online
+  start_phase:             "online"  # opções: execution, imagery, online
   block_end_code:          99
   block_end_label:         "BLOCK_END"
   motor_session_type:      "EM_treino"
