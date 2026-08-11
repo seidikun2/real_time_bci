@@ -9,7 +9,7 @@
 # -----------------------------
 experiment:
   subject_id:      "SY001"
-  session_id:      3
+  session_id:      4
   log_root:        "C:/Users/Unifesp/Desktop/Dados Seidi"
   exp_name:        "TEST"
   session_type:    "IM_treino"       # opções: EM_treino, IM_treino, IM_online
@@ -78,7 +78,7 @@ trial_offset_s:    0.0
 
 # Janela de feature. O treino extrai janelas de window_s dentro de cada trial;
 # o online usa a última janela contínua de window_s.
-window_s:          1.0
+window_s:          1.5
 step_s:            0.05
 
 # Filtro temporal comum ao treino, check e online.
@@ -89,7 +89,7 @@ bp_band_hz:        [5.0, 40.0]
 # Canais. Lista vazia = todos. Índices por padrão são base-1.
 select_by:         "index"              # opções: index, name
 index_base:        1                     # opções: 0, 1
-select_channels:   []                    # exemplo: [1, 2, 4, 5, 7, 9, 10]
+select_channels:   [1,2,3,4,5,6,7,8,9,11,12,13,14,15]                    # exemplo: [1, 2, 4, 5, 7, 9, 10]
 
 # Modelo.
 feature_space:     "riemann_pca"        # opções: riemann_pca
