@@ -47,7 +47,7 @@ FALLBACK_PCA_YLIM   = (-5.0, 5.0)
 PCA_LIMIT_PAD_FRAC  = 0.10
 
 # Mantém o range praticamente fixo, mas expande se o ponto sair da tela.
-EXPAND_LIMITS_ON_OVERFLOW = True
+EXPAND_LIMITS_ON_OVERFLOW = False
 OVERFLOW_PAD_FRAC         = 0.10
 OVERFLOW_MIN_PAD          = 0.25
 
