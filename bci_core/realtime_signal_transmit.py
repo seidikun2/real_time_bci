@@ -99,16 +99,23 @@ def marker_thread(cfg: AppConfig, inlet, q, stop_event: threading.Event):
                 last = "BOTH"
             elif c == codes.right_mi:
                 last = "RIGHT"
+            elif c == codes.rest_stim:
+                last = "REST"
 
             if c == codes.attempt and last:
-                profiles = {
-                    "LEFT": cfg.sim_profiles.left_mi,
-                    "BOTH": cfg.sim_profiles.both_mi,
-                    "RIGHT": cfg.sim_profiles.right_mi,
-                }
-                l, r = profiles[last]
-                w = weights(cfg, l, r)
-                q.append(Event(wave, w))
+                # REST_STIM é uma condição explícita sem burst motor: fica apenas
+                # o sinal basal + ruído. Isso evita reutilizar acidentalmente o
+                # cue motor do trial anterior.
+                if last != "REST":
+                    profiles = {
+                        "LEFT": cfg.sim_profiles.left_mi,
+                        "BOTH": cfg.sim_profiles.both_mi,
+                        "RIGHT": cfg.sim_profiles.right_mi,
+                    }
+                    l, r = profiles[last]
+                    w = weights(cfg, l, r)
+                    q.append(Event(wave, w))
+                last = None
 
 
 def stream(cfg: AppConfig, outlet, q, stop_event: threading.Event):

@@ -27,7 +27,7 @@ import pyriemann
 
 from .config_models import AppConfig
 from .representation_feedback import prepare_training_representation
-from .class_schema import active_motor_labels, label_map_for, display_name, class_details
+from .class_schema import STIM_CLASS_ORDER, active_stim_labels, training_label_map, display_name, class_details
 
 
 def _raw(cfg: AppConfig) -> dict:
@@ -135,7 +135,7 @@ def read_markers_csv(path: str, code_map: Optional[Dict[int, str]] = None) -> Tu
         cmap = dict(code_map or {
             1: "BASELINE", 2: "ATTENTION", 3: "LEFT_MI_STIM",
             4: "RIGHT_MI_STIM", 5: "ATTEMPT", 6: "REST",
-            7: "BOTH_MI_STIM", 99: "BLOCK_END",
+            7: "BOTH_MI_STIM", 8: "REST_STIM", 99: "BLOCK_END",
         })
         labels = [cmap.get(int(c), "UNKNOWN") for c in code]
     else:
@@ -211,15 +211,20 @@ def nearest_index(t: np.ndarray, x: float) -> int:
     return i - 1 if abs(t[i-1] - x) <= abs(t[i] - x) else i
 
 
-def attempts_by_class(t_mark: np.ndarray, labels: List[str], motor_labels: List[str]) -> Dict[str, List[float]]:
-    out = {label: [] for label in motor_labels}
+def attempts_by_class(t_mark: np.ndarray, labels: List[str], model_labels: List[str]) -> Dict[str, List[float]]:
+    out = {label: [] for label in model_labels}
     last = None
     for ts, lab in zip(t_mark, labels):
         lab = str(lab).strip().upper()
-        if lab in out:
-            last = lab
-        elif lab == "ATTEMPT" and last in out:
-            out[last].append(float(ts))
+        # Todo cue conhecido substitui o cue anterior. Se ele não pertence ao
+        # modelo atual (ex.: RIGHT/BOTH em LEFT vs REST), o ATTEMPT seguinte é
+        # deliberadamente ignorado e nunca herdará a classe do trial anterior.
+        if lab in STIM_CLASS_ORDER:
+            last = lab if lab in out else None
+        elif lab == "ATTEMPT":
+            if last in out:
+                out[last].append(float(ts))
+            last = None
     return out
 
 
@@ -438,12 +443,21 @@ def run_calibration(cfg: AppConfig, markers_file: Optional[str] = None, signal_f
     Xf = bandpass_causal(X_sel, FS_HZ, BP_ORDER, BP_BAND)
     print(f"[calib] Sinal filtrado causal: {Xf.shape}")
 
-    motor_labels = active_motor_labels(labels, require_at_least=2)
-    label_map = label_map_for(motor_labels)
-    attempts = attempts_by_class(t_mark, labels, motor_labels)
-    counts_txt = ", ".join(f"{display_name(k)}={len(attempts[k])}" for k in motor_labels)
-    print(f"[calib] Classes ativas (derivadas dos marcadores): {motor_labels}")
-    print(f"[calib] ATTEMPTs: {counts_txt}")
+    observed_labels = active_stim_labels(labels)
+    label_map = training_label_map(
+        labels,
+        training_mode=cfg.protocol.training_mode,
+        online_target=cfg.protocol.online_target,
+    )
+    model_labels = list(label_map.keys())
+    attempts = attempts_by_class(t_mark, labels, model_labels)
+    counts_txt = ", ".join(f"{display_name(k)}={len(attempts[k])}" for k in model_labels)
+    ignored = [lab for lab in observed_labels if lab not in label_map]
+    print(f"[calib] Estímulos observados: {[display_name(k) for k in observed_labels]}")
+    print(f"[calib] Modelo ({cfg.protocol.training_mode}): {[display_name(k) for k in model_labels]}")
+    if ignored:
+        print(f"[calib] Cues fora do ajuste (confusores/controle): {[display_name(k) for k in ignored]}")
+    print(f"[calib] ATTEMPTs usados: {counts_txt}")
 
     Xw, y, trial_id, t_center = epoch_trials_sliding(t_sig, Xf, attempts, label_map, FS_HZ, WINDOW_S, STEP_S, TRIAL_DURATION_S, TRIAL_OFFSET_S, RNG_SEED)
     print(f"[calib] Janelas: N={Xw.shape[0]} | C={Xw.shape[1]} | T={Xw.shape[2]} | trials={len(np.unique(trial_id))}")
@@ -553,6 +567,10 @@ def run_calibration(cfg: AppConfig, markers_file: Optional[str] = None, signal_f
         "svc": {"C": SVC_C, "kernel": "linear", "probability": True, "random_state": RNG_SEED},
         "classes_map": {str(k): int(v) for k, v in label_map.items()},
         "classes": details,
+        "protocol_stage": str(getattr(cfg.protocol, "stage", "")),
+        "training_mode": str(cfg.protocol.training_mode),
+        "online_target": str(cfg.protocol.online_target),
+        "observed_stim_labels": list(observed_labels),
         "model_dir": model_dir,
         "run_id": run_id,
         "pca_map_json": visible_pca_map_json,

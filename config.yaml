@@ -1,135 +1,87 @@
 # =============================================================================
-# CONFIGURAÇÃO PRINCIPAL — PROTOCOLO BCI EM TEMPO REAL
+# BCI real-time protocol — configuração principal
 # =============================================================================
 # Uso normal:
-#     python main.py
+#   1) ajuste sujeito/sessão;
+#   2) escolha protocol.stage;
+#   3) rode: python main.py
 #
-# Antes de iniciar cada sessão, conferir principalmente:
+# ETAPA 1 — single_target
+#   EM_treino -> IM_treino -> online target com feedback -> sem feedback
+#   Modelo: perna-alvo vs REST_STIM
 #
-#   1. experiment
-#      - subject_id
-#      - session_id
-#      - exp_name
+# ETAPA 2 — two_legs
+#   EM_treino -> IM_treino -> online com feedback -> online sem feedback
+#   Modelo: LEFT vs RIGHT vs REST_STIM
 #
-#   2. runtime
-#      - simulate_signal
-#
-#   3. protocol
-#      - start_phase
-#      - tipos de sessão
-#      - ordem/configuração dos blocos online
-#
-# Os demais parâmetros ficam na seção "CONFIGURAÇÕES TÉCNICAS / AVANÇADAS"
-# e, em geral, não precisam ser alterados a cada sessão.
-#
-# As classes motoras são determinadas pelos eventos presentes em:
-#     experiment/stims_sequence.csv
-#
-# Se BOTH_MI_STIM estiver presente, o pipeline usa LEFT / BOTH / RIGHT.
-# Se for removido, volta automaticamente para LEFT / RIGHT.
+# As duas etapas têm exatamente a mesma sequência. O que muda é somente
+# quais classes entram no modelo/controle online. Para passar de uma etapa
+# para a outra, troque stage e rode main.py novamente.
 # =============================================================================
-
 
 # #############################################################################
-# PARÂMETROS PRINCIPAIS — CONFERIR ANTES DE CADA SESSÃO
+# PARÂMETROS PRINCIPAIS
 # #############################################################################
-
-
-# =============================================================================
-# 1. EXPERIMENTO
-# =============================================================================
 
 experiment:
   subject_id    : "TEST"
   session_id    : 1
-  exp_name      : "BNI"
-  session_type  : "IM_treino"   # valor inicial; o main altera conforme a fase
+  exp_name      : "TEST"
+  session_type  : "IM_treino"   # o main altera conforme a fase
   log_root      : "C:/Users/User/Desktop/Dados"
 
-
-# =============================================================================
-# 2. MODO DE AQUISIÇÃO
-# =============================================================================
-# ESTE É UM DOS PARÂMETROS MAIS IMPORTANTES.
-#
-# true  = usa o sinal simulado
-# false = usa o amplificador g.HIamp
-# =============================================================================
-
 runtime:
-  simulate_signal  : true
-
-
-# =============================================================================
-# 3. PROTOCOLO / BLOCOS
-# =============================================================================
-# start_phase define EM QUAL FASE o experimento começa.
-#
-# Valores possíveis:
-#   execution  = execução motora
-#   imagery    = imagética motora
-#   online     = fase online
-#
-# ESTE É UM DOS PARÂMETROS MAIS IMPORTANTES DO PROTOCOLO.
-# =============================================================================
+  simulate_signal  : true        # true = simulação; false = g.HIamp
 
 protocol:
-  start_phase          : "online"   # execution | imagery | online
+  stage          : "single_target"  # single_target | two_legs
+  start_phase    : "auto"           # auto | execution | imagery | online
 
-  # Identificação do final de cada bloco
+  # Usado somente em single_target.
+  online_target  : "right"          # left | right
+
+  # auto resolve conforme stage:
+  #   single_target -> target_vs_rest
+  #   two_legs      -> left_right_vs_rest
+  training_mode  : "auto"
+
   block_end_code       : 99
   block_end_label      : "BLOCK_END"
-
-  # Nomes usados para salvar os diferentes tipos de sessão
   motor_session_type   : "EM_treino"
   imagery_session_type : "IM_treino"
 
-  # ---------------------------------------------------------------------------
-  # BLOCOS ONLINE
-  # ---------------------------------------------------------------------------
-  # Ordem atual:
-  #   1. online com feedback PCA
-  #   2. online sem feedback
-  #
-  # Os dois modos usam a mesma pasta S#/online.
-  # O nome dos arquivos identifica a condição.
-  # ---------------------------------------------------------------------------
+  # Online da ETAPA 1.
+  online_modes_single_target:
+    - name          : "target_feedback"
+      label         : "Online target com feedback PCA"
+      session_type  : "IM_online_target_PCA"
+      feedback_mode : "pca"
 
-  online_modes:
-    - name           : "pca_feedback"
-      label          : "Online com feedback PCA"
-      session_type   : "IM_online_PCA"
-      feedback_mode  : "pca"
+    - name          : "target_no_feedback"
+      label         : "Online target sem feedback"
+      session_type  : "IM_online_target_sem_feedback"
+      feedback_mode : "none"
 
-    - name           : "no_feedback"
-      label          : "Online sem feedback"
-      session_type   : "IM_online_sem_feedback"
-      feedback_mode  : "none"
+  # Online da ETAPA 2 — mesma sequência da etapa 1.
+  online_modes_two_legs:
+    - name          : "two_legs_feedback"
+      label         : "Online duas pernas com feedback PCA"
+      session_type  : "IM_online_duas_pernas_PCA"
+      feedback_mode : "pca"
 
-  # Critério para seguir automaticamente para o online.
-  # null = decisão manual.
+    - name          : "two_legs_no_feedback"
+      label         : "Online duas pernas sem feedback"
+      session_type  : "IM_online_duas_pernas_sem_feedback"
+      feedback_mode : "none"
+
   min_cv_accuracy      : null
-
-  # Verifica os dados ao final da etapa anterior.
   auto_check_data      : true
-
-  # Seleção do modelo para a fase online:
-  # ask | latest | auto | caminho explícito
-  online_model_prefix  : "ask"
-
-  # Tipos de sessão aceitos para treinamento/seleção de modelo.
-  model_session_types  : ["EM_treino", "IM_treino"]
-
+  online_model_prefix  : "latest"      # sempre usa o IM_treino mais recente
+  model_session_types  : ["IM_treino"]
 
 # #############################################################################
 # CONFIGURAÇÕES TÉCNICAS / AVANÇADAS
-# Normalmente não precisam ser alteradas entre sessões.
 # #############################################################################
-
-
-# =============================================================================
-# 4. STREAMS LSL
-# =============================================================================
 
 lsl:
   marker_name   : "GrazMI_Markers"
@@ -139,33 +91,19 @@ lsl:
   decoder_name  : "Signal"
   decoder_type  : "BCI"
 
-
-# =============================================================================
-# 5. PSYCHOPY
-# =============================================================================
-# O PsychoPy é iniciado automaticamente pelo main.py.
-# =============================================================================
-
 psychopy:
   enabled                 : true
-  mode                    : "psyexp"   # psyexp | auto | script
-
+  mode                    : "psyexp"
   experiment_file         : "experiment/Graz_UpperLimb.psyexp"
   generated_script        : "experiment/Graz_UpperLimb_autorun.py"
   fallback_script         : null
   stim_sequence           : "experiment/stims_sequence.csv"
-
-  # null = tenta detectar automaticamente uma instalação do Python
-  # que consiga importar PsychoPy.
   python_executable       : null
-
   compile_version         : null
   compile_if_changed      : true
   inject_session_info     : true
   hide_info_dialog        : true
   new_console             : false
-
-  # Tempos de inicialização e tolerância.
   pre_launch_pause_s      : 2.0
   startup_grace_s         : 10.0
   startup_status_every_s  : 5.0
@@ -174,144 +112,88 @@ psychopy:
   exit_grace_s            : 5.0
   max_block_duration_s    : null
 
-
-# =============================================================================
-# 6. SINAL / FEATURES / CLASSIFICADOR
-# =============================================================================
-
 fs_hz                    : 256.0
 n_channels               : 16
-
-trial_duration_s         : 4.0
+trial_duration_s         : 3.75
 trial_offset_s           : 0.0
 window_s                 : 1.0
 step_s                   : 0.05
-
 filter_mode              : "causal"
 bp_order                 : 3
 bp_band_hz               : [5.0, 40.0]
-
 select_by                : "index"
 index_base               : 1
 select_channels          : []
-
 feature_space            : "riemann_pca"
 classifier               : "svm_linear"
 pca_dim                  : 2
 svc_c                    : 1.0
 cv_splits                : 5
 rng_seed                 : 42
-
 decoder_outlet_name      : "Signal"
 decoder_outlet_type      : "BCI"
 decoder_lsl_rate_hz      : 64.0
 
-
-# =============================================================================
-# 7. REPRESENTAÇÃO PCA / FEEDBACK PARA O UNITY
-# =============================================================================
-
 representation_feedback:
-  dimensions       : 2
-  name             : "PCA"
-  pad_frac         : 0.10
-  grid_size        : 240
-  density_masses   : [0.50, 0.80, 0.95]
-  show_labels      : true
-
+  dimensions      : 2
+  name            : "PCA"
+  pad_frac        : 0.10
+  grid_size       : 240
+  density_masses  : [0.50, 0.80, 0.95]
+  show_labels     : true
   transform:
-    type           : "identity"
+    type: "identity"
 
-
-# =============================================================================
-# 8. CONTROLE MOTOR ONLINE / UNITY
-# =============================================================================
-
+# O stream mantém [rep1, rep2, left, both, right] para compatibilidade com Unity.
+# REST_STIM não ocupa canal motor: REST = nenhuma perna ativada.
 control:
   enabled                     : true
   outlet_name                 : "GrazMI_Control"
   outlet_type                 : "BCIControl"
-
-  # Histerese espacial
   entry_density_mass          : 0.50
   hold_density_mass           : 0.80
-
-  # Persistência mínima para evitar alternâncias rápidas
   enter_persist_s             : 0.25
   exit_persist_s              : 0.20
-
-  # Confirmação / desempate pela probabilidade do SVM
   min_probability             : 0.40
   min_probability_margin      : 0.05
-
-  # Compatibilidade com modelos antigos sem regiões de densidade
   allow_probability_fallback  : true
-
-  # Dinâmica do movimento no Unity
   movement_rise_s             : 1.20
   movement_fall_s             : 0.80
   output_rate_hz              : 60.0
   decoder_stale_s             : 0.60
 
+check_tmin_s    : -0.5
+check_save_png  : true
 
-# =============================================================================
-# 9. CONTROLE DE QUALIDADE
-# =============================================================================
+# Sinal simulado. REST_STIM = ruído/basal, sem burst motor.
+sim_chunk             : 10
+sim_noise_std         : 0.8
+sim_burst_freq_hz     : 10.0
+sim_burst_amp         : 1.5
+sim_taper_frac        : 0.2
+sim_profile_left_mi   : [1.0, 0.3]
+sim_profile_both_mi   : [1.0, 1.0]   # legado
+sim_profile_right_mi  : [0.3, 1.0]
 
-check_tmin_s              : -0.5
-check_save_png            : true
-
-
-# =============================================================================
-# 10. SINAL SIMULADO
-# =============================================================================
-# Usado apenas quando:
-#     runtime.simulate_signal = true
-#
-# Cada par representa o peso do padrão nas duas metades dos canais simulados.
-# BOTH produz atividade bilateral e só é usado quando BOTH_MI_STIM aparece
-# nos marcadores do protocolo.
-# =============================================================================
-
-sim_chunk                 : 10
-sim_noise_std             : 0.8
-sim_burst_freq_hz         : 10.0
-sim_burst_amp             : 1.5
-sim_taper_frac            : 0.2
-
-sim_profile_left_mi       : [1.0, 0.3]
-sim_profile_both_mi       : [1.0, 1.0]
-sim_profile_right_mi      : [0.3, 1.0]
-
-
-# =============================================================================
-# 11. CÓDIGOS DOS MARCADORES LSL
-# =============================================================================
-
+# Marcadores do protocolo.
+# REST (6) = pausa intertrial; REST_STIM (8) = condição experimental.
 codes:
-  left_mi     : 3
-  right_mi    : 4
-  both_mi     : 7
-  attempt     : 5
-  block_end   : 99
-
+  left_mi    : 3
+  right_mi   : 4
+  both_mi    : 7      # legado; não aparece na sequência atual
+  rest_stim  : 8
+  attempt    : 5
+  block_end  : 99
   map:
-    "1"       : "BASELINE"
-    "2"       : "ATTENTION"
-    "3"       : "LEFT_MI_STIM"
-    "4"       : "RIGHT_MI_STIM"
-    "5"       : "ATTEMPT"
-    "6"       : "REST"
-    "7"       : "BOTH_MI_STIM"
-    "99"      : "BLOCK_END"
-
-
-# =============================================================================
-# 12. g.HIamp
-# =============================================================================
-# Usado apenas quando:
-#     runtime.simulate_signal = false
-# =============================================================================
+    "1"  : "BASELINE"
+    "2"  : "ATTENTION"
+    "3"  : "LEFT_MI_STIM"
+    "4"  : "RIGHT_MI_STIM"
+    "5"  : "ATTEMPT"
+    "6"  : "REST"
+    "7"  : "BOTH_MI_STIM"
+    "8"  : "REST_STIM"
+    "99" : "BLOCK_END"
 
 hiamp:
   gtec_root               : "D:/Documentos/gtec/gNEEDaccessClientAPI"
@@ -320,13 +202,6 @@ hiamp:
   drop_reference_channel  : true
   reference_mode          : "car"
   chunk                   : 10
-
-
-# =============================================================================
-# 13. DEBUG / JANELA DIAGNÓSTICA
-# =============================================================================
-# O feedback operacional principal permanece no Unity.
-# =============================================================================
 
 debug_plot:
   enabled      : false

@@ -33,7 +33,10 @@ class RuntimeConfig:
 
 @dataclass
 class ProtocolConfig:
-    start_phase: str = "execution"
+    stage: str = "single_target"
+    start_phase: str = "auto"
+    training_mode: str = "target_vs_rest"
+    online_target: str = "left"
     block_end_code: int = 99
     block_end_label: str = "BLOCK_END"
     motor_session_type: str = "EM_treino"
@@ -73,6 +76,7 @@ class CodesConfig:
     left_mi: int
     both_mi: int
     right_mi: int
+    rest_stim: int
     attempt: int
     block_end: int
     code_map: Dict[int, str]
@@ -197,11 +201,29 @@ def _default_online_modes() -> list[dict[str, Any]]:
 
 def _protocol(raw: Dict[str, Any]) -> ProtocolConfig:
     p = raw.get("protocol", {}) or {}
+    stage = str(p.get("stage", "single_target")).strip().lower()
+    stage_alias = {
+        "single": "single_target", "single_leg": "single_target", "one_leg": "single_target",
+        "single_target": "single_target", "target_vs_rest": "single_target",
+        "dual": "two_legs", "dual_leg": "two_legs", "two_legs": "two_legs",
+        "left_right": "two_legs", "left_right_vs_rest": "two_legs",
+    }
+    stage = stage_alias.get(stage, stage)
+    if stage not in {"single_target", "two_legs"}:
+        raise ValueError("protocol.stage inválido. Use single_target ou two_legs.")
+
+    training_mode = str(p.get("training_mode", "auto")).strip().lower()
+    if training_mode in {"", "auto"}:
+        training_mode = "target_vs_rest" if stage == "single_target" else "left_right_vs_rest"
+
     modes = p.get("online_modes", _default_online_modes())
     if not isinstance(modes, list) or not modes:
         modes = _default_online_modes()
     return ProtocolConfig(
-        start_phase=str(p.get("start_phase", "execution")),
+        stage=stage,
+        start_phase=str(p.get("start_phase", "auto")),
+        training_mode=training_mode,
+        online_target=str(p.get("online_target", "left")),
         block_end_code=int(p.get("block_end_code", _nested(raw, "codes", "block_end", 99))),
         block_end_label=str(p.get("block_end_label", "BLOCK_END")),
         motor_session_type=str(p.get("motor_session_type", "EM_treino")),
@@ -286,6 +308,7 @@ def load_config(path: str) -> AppConfig:
         left_mi=int(codes_raw.get("left_mi", 3)),
         both_mi=int(codes_raw.get("both_mi", 7)),
         right_mi=int(codes_raw.get("right_mi", 4)),
+        rest_stim=int(codes_raw.get("rest_stim", 8)),
         attempt=int(codes_raw.get("attempt", 5)),
         block_end=int(codes_raw.get("block_end", 99)),
         code_map=code_map,

@@ -17,7 +17,7 @@ from typing import List, Optional, Dict
 from scipy import signal
 
 from .config_models import AppConfig
-from .class_schema import active_motor_labels, display_name
+from .class_schema import STIM_CLASS_ORDER, training_label_map, display_name
 
 COLOR = {
     "BASELINE"     : "#7f7f7f",
@@ -25,6 +25,7 @@ COLOR = {
     "LEFT_MI_STIM" : "#4169e1",
     "RIGHT_MI_STIM": "#dc143c",
     "BOTH_MI_STIM" : "#6a3d9a",
+    "REST_STIM"    : "#555555",
     "ATTEMPT"      : "#2e8b57",
     "REST"         : "#800080",
 }
@@ -157,15 +158,17 @@ def nearest_index(t, x):
     return i-1 if abs(t[i-1]-x) <= abs(t[i]-x) else i
 
 
-def attempts_by_class(t_mark, labels, codes, code_map, motor_labels):
-    out = {label: [] for label in motor_labels}
+def attempts_by_class(t_mark, labels, codes, code_map, model_labels):
+    out = {label: [] for label in model_labels}
     last = None
     for ts, lab, c in zip(t_mark, labels, codes):
         lab_eff = str(lab if lab else code_map.get(c, "")).strip().upper()
-        if lab_eff in out:
-            last = lab_eff
-        elif lab_eff == "ATTEMPT" and last in out:
-            out[last].append(ts)
+        if lab_eff in STIM_CLASS_ORDER:
+            last = lab_eff if lab_eff in out else None
+        elif lab_eff == "ATTEMPT":
+            if last in out:
+                out[last].append(ts)
+            last = None
     return out
 
 
@@ -273,12 +276,17 @@ def run_check_data(cfg: AppConfig, mode: str = "train", markers_file: Optional[s
     Xf = bandpass_causal(X, float(mcfg.fs_hz), order, band)
     print(f"[check] Filtro igual ao modelo: causal bandpass {band}, ordem {order}")
 
-    motor_labels = active_motor_labels(labels, require_at_least=1)
-    ev_by_cls = attempts_by_class(t_mark, labels, codes, code_map, motor_labels)
-    n_cls = max(1, len(motor_labels))
+    label_map = training_label_map(
+        labels,
+        training_mode=cfg.protocol.training_mode,
+        online_target=cfg.protocol.online_target,
+    )
+    model_labels = list(label_map.keys())
+    ev_by_cls = attempts_by_class(t_mark, labels, codes, code_map, model_labels)
+    n_cls = max(1, len(model_labels))
     fig2, axes = plt.subplots(n_cls, 1, figsize=(12, 3.2 * n_cls), sharex=True)
     axes = np.atleast_1d(axes)
-    for ax, label in zip(axes, motor_labels):
+    for ax, label in zip(axes, model_labels):
         plot_window_examples(
             ax, t_sig, Xf, ev_by_cls.get(label, []), float(mcfg.fs_hz),
             window_s, trial_duration_s, ch_names, COLOR.get(label, "#555555"),

@@ -1,273 +1,127 @@
-# BCI Graz MI — projeto reorganizado
+# BCI — protocolo em duas etapas
 
-## Como usar
-
-O ponto de entrada continua sendo somente:
+Execute sempre pela raiz:
 
 ```bash
 python main.py
 ```
 
-Antes de rodar, ajuste `config.yaml` (sujeito, sessão, pasta de dados, modo simulado/real e, se necessário, caminho do Python do PsychoPy).
+O protocolo atual usa três cues experimentais no PsychoPy/Unity:
 
-O `main.py` inicia aquisição, logger, PsychoPy e decoder conforme a fase. O PsychoPy é compilado automaticamente a partir de `experiment/Graz_UpperLimb.psyexp`; não é necessário abrir o Builder para cada bloco.
+- `LEFT_MI_STIM` — bola esquerda
+- `RIGHT_MI_STIM` — bola direita
+- `REST_STIM` — bola central, entre as pernas
 
-## Estrutura
+`REST_STIM` é diferente de `REST`: `REST` continua sendo apenas a pausa entre trials.
 
-```text
-bci_project/
-├── main.py                    # único ponto de entrada
-├── config.yaml                # configuração principal
-├── bci_core/                  # módulos internos do pipeline
-│   ├── class_schema.py        # definição dinâmica LEFT/BOTH/RIGHT
-│   ├── config_models.py       # leitura/validação do config
-│   ├── realtime_signal_transmit.py  # EEG simulado -> LSL
-│   ├── input_hiamp.py         # g.HIamp -> LSL
-│   ├── receive_data_log.py    # gravação oficial sinal + marcadores
-│   ├── decoder_calibration.py # treino Riemann + PCA + SVM
-│   ├── representation_feedback.py # mapa/JSON da representação
-│   ├── online_inference.py    # PCA + probabilidades -> LSL
-│   ├── intention_control.py   # densidade/probabilidade -> movimento Unity
-│   ├── check_data.py          # QC
-│   └── psychopy_process.py    # compila/inicia/encerra PsychoPy
-├── experiment/
-│   ├── Graz_UpperLimb.psyexp  # fonte do experimento PsychoPy
-│   └── stims_sequence.csv     # controla quais classes aparecem
-├── stims/                     # imagens do protocolo
-└── tools/
-    └── plot_decoder_realtime.py # janela diagnóstica opcional
-```
+## Etapa 1 — uma perna vs REST
 
-`Graz_UpperLimb_autorun.py` e `_lastrun.py` deixam de ser arquivos de trabalho do projeto: o autorun é gerado automaticamente quando necessário.
-
-## Duas ou três classes: altere somente `stims_sequence.csv`
-
-O pipeline deriva as classes motoras dos marcadores efetivamente presentes no bloco. A ordem canônica é:
-
-- `LEFT_MI_STIM` — perna esquerda
-- `BOTH_MI_STIM` — ambas as pernas
-- `RIGHT_MI_STIM` — perna direita
-
-A versão incluída contém as três classes. Para executar um protocolo binário, remova as linhas `BOTH_MI_STIM` de `experiment/stims_sequence.csv`. Não é necessário alterar `config.yaml`, treino, QC ou decoder.
-
-O marcador de BOTH é `7`. O stream online mantém cinco canais na ordem:
-
-```text
-rep1, rep2, left, both, right
-```
-
-Em um modelo de duas classes, `both` permanece no stream com valor `0`, preservando a interface com o Unity.
-
-## Simulação
-
-O sinal simulado tem três perfis configuráveis:
+No `config.yaml`:
 
 ```yaml
-sim_profile_left_mi:  [1.0, 0.3]
-sim_profile_both_mi:  [1.0, 1.0]
-sim_profile_right_mi: [0.3, 1.0]
+protocol:
+  stage         : "single_target"
+  start_phase   : "auto"
+  online_target : "right"   # left | right
 ```
 
-O perfil BOTH é bilateral. Ele só é acionado quando o PsychoPy emite `BOTH_MI_STIM` seguido de `ATTEMPT`.
-
-A simulação apenas publica EEG em LSL. A gravação oficial é feita exclusivamente por `receive_data_log.py`, assim como no g.HIamp.
-
-## Online: dois modos separados
-
-O `config.yaml` define dois modos online:
-
-1. `IM_online_PCA` — **primeiro**, com feedback da representação PCA no Unity;
-2. `IM_online_sem_feedback` — **depois**, sem apresentação do mapa PCA.
-
-Cada modo possui seu próprio contador e controle de repetição. Os dois são gravados na mesma pasta `S<session>/online/`; a condição é identificada no nome do arquivo por `IM_online_PCA` ou `IM_online_sem_feedback`. Ao terminar um bloco é possível repetir aquele mesmo modo, seguir para o próximo ou finalizar a sessão.
-
-O decoder continua publicando `rep1/rep2` nos dois modos para que aquisição e modelo sejam idênticos. O stream LSL recebe metadata `feedback_mode` (`none` ou `pca`) e `feedback_enabled`; a decisão de mostrar ou não a representação fica no Unity.
-
-## Controle motor por densidade + probabilidade
-
-O online agora separa **decodificação** de **controle**. Isso evita usar a
-probabilidade do SVM diretamente como altura da perna.
-
-### Stream do decoder
-
-O `online_inference.py` continua publicando:
+Com `start_phase: auto`, o `main.py` executa:
 
 ```text
-Signal / BCI
-rep1, rep2, left, both, right
+EM_treino
+→ IM_treino
+→ online target com feedback PCA
+→ online target sem feedback
 ```
 
-`left/both/right` são probabilidades das classes quando o modelo possui
-`predict_proba`. `rep1/rep2` são as coordenadas no mesmo espaço do mapa PCA.
+O bloco de treino contém LEFT, RIGHT e REST, mas o classificador usa somente:
 
-### Regiões numéricas no `pca_map.json`
+```text
+RIGHT vs REST   # se online_target=right
+```
 
-Além do PNG visual, o JSON agora contém `density_regions`. Para cada classe,
-são guardadas as regiões HDR de 50%, 80% e 95% como polígonos nas coordenadas
-`rep1/rep2`. Portanto o controlador não precisa inferir regiões pelos pixels do PNG.
+ou
 
-O padrão é:
+```text
+LEFT vs REST    # se online_target=left
+```
 
-- **entrar** na classe ao atingir a HDR 50%;
-- **manter** a classe enquanto o ponto permanecer na HDR 80%;
-- usar `P(left/both/right)` para confirmar a classe e resolver sobreposições;
-- exigir persistência temporal antes de ligar/desligar.
+A outra perna permanece nos dados/cues, mas não entra no ajuste do modelo. No online ela funciona como confusor.
 
-Tudo é ajustável em `config.yaml`:
+## Etapa 2 — duas pernas + REST
+
+Depois de terminar a etapa 1, altere somente:
 
 ```yaml
-control:
-  entry_density_mass: 0.50
-  hold_density_mass: 0.80
-  enter_persist_s: 0.25
-  exit_persist_s: 0.20
-  min_probability: 0.40
-  min_probability_margin: 0.05
+protocol:
+  stage: "two_legs"
 ```
 
-### Stream de controle para o Unity
+e execute novamente:
 
-O novo `bci_core/intention_control.py` publica:
+```bash
+python main.py
+```
+
+Com `start_phase: auto`, a segunda etapa repete exatamente o mesmo fluxo:
 
 ```text
-GrazMI_Control / BCIControl
-left_leg, right_leg, rest, left, both, right, confidence, density_gate, state_id
+EM_treino
+→ IM_treino
+→ online duas pernas com feedback PCA
+→ online duas pernas sem feedback
 ```
 
-`state_id` usa:
+O modelo passa a usar:
 
 ```text
-0 = REST
-1 = LEFT
-2 = BOTH
-3 = RIGHT
+LEFT vs RIGHT vs REST
 ```
 
-`left_leg` e `right_leg` são posições contínuas entre 0 e 1. Quando LEFT é
-ativado, por exemplo, `left_leg` continua subindo a partir do valor atual. Ao
-sair da região de manutenção, ela passa a cair a partir do ponto em que estava.
-BOTH faz as duas pernas subirem.
+Isto corresponde às duas pernas como classes motoras separadas, mantendo REST como estado explícito de não movimento. Não há movimento simultâneo BOTH nesta etapa.
 
-A curva temporal também é configurável:
-
-```yaml
-control:
-  movement_rise_s: 1.20
-  movement_fall_s: 0.80
-  output_rate_hz: 60.0
-```
-
-O Unity pode continuar usando `Signal/BCI` para desenhar o ponto sobre o mapa,
-e usar `GrazMI_Control/BCIControl` exclusivamente para animar as pernas. Nos
-dois modos online o controlador funciona da mesma forma; a condição
-`sem feedback` apenas deixa de mostrar o mapa ao participante.
-
-Cada bloco online também grava um arquivo `*_control_<run_id>.csv` com estado,
-posição das pernas, probabilidades, `rep1/rep2` e indicação de entrada/hold em
-cada região.
-
-## Janela PCA em Python
-
-A antiga janela `plot_decoder_realtime.py` agora é apenas uma ferramenta diagnóstica e vem desligada:
-
-```yaml
-debug_plot:
-  enabled: false
-```
-
-Ative somente quando quiser depurar o decoder. Ela não é necessária para o protocolo com Unity.
-
-## Organização dos dados, modelo e `pca_map.json`
-
-A organização agora é orientada aos arquivos que você realmente consulta. Não existe mais uma pasta global `S#/models/` para novos treinos.
+Portanto, as duas etapas diferem somente no modelo:
 
 ```text
-<log_root>/<subject>/S<session>/
-├── IM_treino/
-│   └── train/
-│       ├── ..._markers_<run_id>.csv
-│       ├── ..._signal_<run_id>.csv
-│       ├── pca_map_<run_id>.json       # uso direto / Unity
-│       ├── pca_map_<run_id>.png        # imagem projetada no Unity
-│       ├── _model/
-│       │   └── <run_id>/
-│       │       ├── classifier.pkl
-│       │       ├── pca.pkl
-│       │       ├── riemann_mean.pkl
-│       │       ├── model_meta.json
-│       │       └── channels.txt
-│       └── _qc/
-│           └── <run_id>/
-│               ├── stack_raw_markers.png
-│               ├── model_windows.png
-│               └── pca_diagnostic.png
-└── online/
-    ├── ..._IM_online_PCA_online_markers_<run_id>.csv
-    ├── ..._IM_online_PCA_online_signal_<run_id>.csv
-    ├── ..._IM_online_PCA_decoder_<run_id>.csv
-    ├── ..._IM_online_sem_feedback_online_markers_<run_id>.csv
-    ├── ..._IM_online_sem_feedback_online_signal_<run_id>.csv
-    ├── ..._IM_online_sem_feedback_decoder_<run_id>.csv
-    ├── pca_map.json                    # configuração do mapa selecionado
-    ├── pca_map.png                     # imagem projetada no Unity
-    └── _model/
-        └── selected_model.json         # rastreabilidade técnica
+single_target : TARGET vs REST_STIM
+two_legs      : LEFT vs RIGHT vs REST_STIM
 ```
 
-A mesma regra vale para `EM_treino/train/`. Assim, ao abrir uma pasta de treino, o que fica imediatamente visível são os **dados adquiridos** e o **mapa JSON**. Pickles, metadados e figuras diagnósticas ficam em subpastas.
+A sequência experimental continua LEFT + RIGHT + REST_STIM nas duas etapas.
 
-### Qual `pca_map.json` usar no Unity?
+O `online_model_prefix: "latest"` e `model_session_types: ["IM_treino"]` fazem o online usar automaticamente o modelo da IM mais recente, portanto a segunda etapa não reutiliza por engano o modelo da primeira.
 
-Durante o treino, cada bloco gera o par:
+## Unity
+
+A interface do decoder permanece compatível:
 
 ```text
-IM_treino/train/pca_map_<run_id>.json
-IM_treino/train/pca_map_<run_id>.png
+Signal / BCI = [rep1, rep2, left, both, right]
 ```
 
-O JSON contém a geometria/configuração da representação e o PNG é a imagem efetivamente projetada no Unity. Eles devem permanecer juntos.
+`REST_STIM` não cria um canal motor extra. Quando REST é dominante, nenhuma perna deve ser ativada.
 
-Quando você escolhe um modelo para o online, o `main.py` copia os dois para caminhos fixos:
+A lógica visual do Unity deve mapear os cues assim:
 
 ```text
-S<session>/online/pca_map.json
-S<session>/online/pca_map.png
+LEFT_MI_STIM  → bola para esquerda
+RIGHT_MI_STIM → bola para direita
+REST_STIM     → bola para o centro (trajetória antes usada por BOTH)
 ```
 
-**Esse par é o recomendado para o Unity**, porque não muda entre blocos nem depende de descobrir o `run_id`. Em um treino de duas classes, o JSON descreve LEFT/RIGHT; em três classes, LEFT/BOTH/RIGHT. O JSON também carrega os polígonos numéricos das regiões de densidade usados pelo `intention_control.py`.
+A alteração dessa trajetória é feita no projeto Unity, não neste pacote Python.
 
-### Compatibilidade com versões anteriores
+## PsychoPy
 
-Modelos já criados pela v3/v3.1 em:
+`experiment/stims_sequence.csv` contém apenas LEFT, RIGHT e REST_STIM. `BOTH_MI_STIM` continua no mapa de códigos apenas por compatibilidade, mas não participa do protocolo atual.
+
+As imagens devem estar diretamente em `experiment/`:
 
 ```text
-S<session>/models/<fase>/<run_id>/
+cross.png
+rest.png
+left_foot.png
+right_foot.png
 ```
 
-continuam sendo encontrados pelo `main.py`. Portanto, uma sessão já iniciada não precisa ser treinada novamente apenas por causa desta reorganização. Novos treinos passam a usar a estrutura `_model/` descrita acima.
-
-## Carregamento do PsychoPy
-
-Para evitar a impressão de que o programa travou durante a inicialização do PsychoPy:
-
-```yaml
-psychopy:
-  pre_launch_pause_s: 2.0
-  startup_grace_s: 10.0
-  startup_status_every_s: 5.0
-  startup_timeout_s: 90.0
-```
-
-Durante a abertura, o `main` mostra mensagens periódicas como `PsychoPy carregando...`. O timeout só é aplicado depois do período de tolerância. Se o processo morrer antes de `BLOCK_END` ou deixar de emitir marcadores além do limite configurado, o bloco é marcado como incompleto e não entra no treino.
-
-## Imagens de estímulo
-
-As imagens não foram enviadas junto com os códigos nesta conversa. Copie os arquivos já existentes do seu projeto para `stims/`:
-
-- `left_foot.png`
-- `right_foot.png`
-- `both_feet.png`
-- `cross.png`
-- `rest.png`
-
-Os caminhos no `.psyexp` e na sequência já foram convertidos para caminhos relativos, evitando dependência de `C:\\Users\\...`.
+O `.psyexp` lê `stims_sequence.csv` e envia o marcador correspondente no início do cue.

@@ -181,7 +181,13 @@ def _probabilities(sample) -> dict[str, float]:
 
 def _probability_margin_ok(label: str, probs: dict[str, float], active_labels: list[str], min_margin: float) -> bool:
     p = float(probs.get(label, 0.0))
+    motor_sum = sum(max(0.0, float(probs.get(lab, 0.0))) for lab in MOTOR_CLASS_ORDER)
+    # REST_STIM não ocupa um canal extra no stream para preservar a interface
+    # [rep1, rep2, left, both, right]. Como predict_proba soma 1, sua
+    # probabilidade pode ser reconstruída como o residual das classes motoras.
+    p_rest = float(np.clip(1.0 - motor_sum, 0.0, 1.0))
     others = [float(probs.get(other, 0.0)) for other in active_labels if other != label]
+    others.append(p_rest)
     second = max(others) if others else 0.0
     return (p - second) >= float(min_margin)
 

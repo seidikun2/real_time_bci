@@ -59,8 +59,9 @@ CODE_MAP = {
     3: "LEFT_MI_STIM",
     4: "RIGHT_MI_STIM",
     5: "ATTEMPT",
-    7: "BOTH_MI_STIM",
     6: "REST",
+    7: "BOTH_MI_STIM",
+    8: "REST_STIM",
     99: "BLOCK_END",
 }
 

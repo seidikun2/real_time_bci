@@ -18,7 +18,7 @@ import yaml
 from pylsl import StreamInlet, resolve_byprop
 
 from bci_core.config_models import AppConfig, load_config
-from bci_core.class_schema import classes_from_sequence, display_name
+from bci_core.class_schema import classes_from_sequence, display_name, training_label_map
 from bci_core.online_inference import run_realtime_decoder
 from bci_core.intention_control import run_intention_controller
 from bci_core.realtime_signal_transmit import run_transmission as run_sim_transmission
@@ -76,6 +76,29 @@ def load_cfg() -> tuple[AppConfig, dict]:
 def protocol(raw: dict) -> dict:
     value = raw.get("protocol", {}) or {}
     return value if isinstance(value, dict) else {}
+
+
+def protocol_stage(raw: dict) -> str:
+    value = str(protocol(raw).get("stage", "single_target")).strip().lower()
+    aliases = {
+        "single": "single_target", "single_leg": "single_target", "one_leg": "single_target",
+        "single_target": "single_target", "target_vs_rest": "single_target",
+        "dual": "two_legs", "dual_leg": "two_legs", "two_legs": "two_legs",
+        "left_right": "two_legs", "left_right_vs_rest": "two_legs",
+    }
+    value = aliases.get(value, value)
+    if value not in {"single_target", "two_legs"}:
+        raise ValueError("protocol.stage inválido. Use single_target ou two_legs.")
+    return value
+
+
+def resolved_start_phase(raw: dict) -> str:
+    value = str(protocol(raw).get("start_phase", "auto")).strip().lower()
+    if value in {"", "auto"}:
+        # As duas etapas percorrem o mesmo fluxo completo:
+        # EM_treino -> IM_treino -> online com feedback -> online sem feedback.
+        return "execution"
+    return normalize_phase(value)
 
 
 def psychopy_cfg(raw: dict) -> dict:
@@ -709,12 +732,24 @@ def stop_debug_plot(proc: subprocess.Popen | None) -> None:
 
 
 def online_modes(raw: dict) -> list[dict]:
-    modes = protocol(raw).get("online_modes")
-    if not isinstance(modes, list) or not modes:
-        modes = [
-            {"name": "pca_feedback", "label": "Online com feedback PCA", "session_type": "IM_online_PCA", "feedback_mode": "pca"},
-            {"name": "no_feedback", "label": "Online sem feedback", "session_type": "IM_online_sem_feedback", "feedback_mode": "none"},
-        ]
+    p = protocol(raw)
+    stage = protocol_stage(raw)
+
+    if stage == "single_target":
+        modes = p.get("online_modes_single_target")
+        if not isinstance(modes, list) or not modes:
+            modes = [
+                {"name": "target_feedback", "label": "Online target com feedback PCA", "session_type": "IM_online_target_PCA", "feedback_mode": "pca"},
+                {"name": "target_no_feedback", "label": "Online target sem feedback", "session_type": "IM_online_target_sem_feedback", "feedback_mode": "none"},
+            ]
+    else:
+        modes = p.get("online_modes_two_legs")
+        if not isinstance(modes, list) or not modes:
+            modes = [
+                {"name": "two_legs_feedback", "label": "Online duas pernas com feedback PCA", "session_type": "IM_online_duas_pernas_PCA", "feedback_mode": "pca"},
+                {"name": "two_legs_no_feedback", "label": "Online duas pernas sem feedback", "session_type": "IM_online_duas_pernas_sem_feedback", "feedback_mode": "none"},
+            ]
+
     out = []
     for i, mode in enumerate(modes, 1):
         if not isinstance(mode, dict):
@@ -778,13 +813,30 @@ def run_online_mode(cfg: AppConfig, raw: dict, mode_cfg: dict, model_ref: str, i
 def show_protocol_summary(cfg: AppConfig, raw: dict, start_phase: str) -> None:
     print("\n===== PROTOCOLO =====")
     print(f"Sujeito: {cfg.experiment.subject_id} | Sessão: S{cfg.experiment.session_id}")
+    stage = protocol_stage(raw)
+    stage_label = "1/2 — uma perna vs REST" if stage == "single_target" else "2/2 — LEFT + RIGHT + REST"
+    print(f"Etapa: {stage_label}")
     print(f"Fase inicial: {start_phase}")
     sequence_cfg = psychopy_cfg(raw).get("stim_sequence", "experiment/stims_sequence.csv")
     sequence_path = PROJECT_DIR / str(sequence_cfg)
     classes = classes_from_sequence(sequence_path)
     if classes:
-        print("Classes na stims_sequence: " + ", ".join(display_name(c) for c in classes))
-        print("  (remover BOTH_MI_STIM da stims_sequence volta automaticamente ao modo de 2 classes)")
+        print("Estímulos na stims_sequence: " + ", ".join(display_name(c) for c in classes))
+        try:
+            model_map = training_label_map(
+                classes,
+                training_mode=cfg.protocol.training_mode,
+                online_target=cfg.protocol.online_target,
+            )
+            print(
+                f"Modelo de treino: {cfg.protocol.training_mode} | "
+                + " / ".join(display_name(c) for c in model_map.keys())
+            )
+            ignored = [c for c in classes if c not in model_map]
+            if ignored:
+                print("Cues fora do ajuste: " + ", ".join(display_name(c) for c in ignored))
+        except Exception as exc:
+            print(f"AVISO configuração de classes: {exc}")
     print("Modos online:")
     for mode in online_modes(raw):
         fb = "feedback PCA" if mode["feedback_mode"] == "pca" else "sem feedback"
@@ -811,7 +863,7 @@ def main() -> None:
     p = protocol(raw)
     em_type = str(p.get("motor_session_type", "EM_treino"))
     im_type = str(p.get("imagery_session_type", "IM_treino"))
-    start_phase = normalize_phase(p.get("start_phase", "execution"))
+    start_phase = resolved_start_phase(raw)
     show_protocol_summary(cfg, raw, start_phase)
 
     phases = PHASE_ORDER[PHASE_ORDER.index(start_phase):]
