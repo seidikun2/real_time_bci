@@ -47,7 +47,7 @@ runAtExit = []
 # information about this experiment
 expInfo = {
     'participant': os.environ.get("BCI_SUBJECT_ID", 'TEST'),
-    'session': os.environ.get("BCI_SESSION_ID", '1'),
+    'session': os.environ.get("BCI_SESSION_ID", '2'),
     'date|hid': data.getDateStr(),
     'expName|hid': expName,
     'expVersion|hid': expVersion,
