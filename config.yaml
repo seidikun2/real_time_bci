@@ -1,227 +1,334 @@
 # =============================================================================
-# BCI real-time protocol — configuração principal
+# CONFIGURAÇÃO PRINCIPAL — PROTOCOLO BCI EM TEMPO REAL
 # =============================================================================
-# Uso normal: edite esta configuração e execute apenas:
+# Uso normal:
 #     python main.py
 #
-# As classes motoras são determinadas pelos eventos presentes em
-# experiment/stims_sequence.csv. Se BOTH_MI_STIM estiver presente, o pipeline
-# trabalha com LEFT/BOTH/RIGHT; se for removido, volta automaticamente a LEFT/RIGHT.
+# Antes de iniciar cada sessão, conferir principalmente:
+#
+#   1. experiment
+#      - subject_id
+#      - session_id
+#      - exp_name
+#
+#   2. runtime
+#      - simulate_signal
+#
+#   3. protocol
+#      - start_phase
+#      - tipos de sessão
+#      - ordem/configuração dos blocos online
+#
+# Os demais parâmetros ficam na seção "CONFIGURAÇÕES TÉCNICAS / AVANÇADAS"
+# e, em geral, não precisam ser alterados a cada sessão.
+#
+# As classes motoras são determinadas pelos eventos presentes em:
+#     experiment/stims_sequence.csv
+#
+# Se BOTH_MI_STIM estiver presente, o pipeline usa LEFT / BOTH / RIGHT.
+# Se for removido, volta automaticamente para LEFT / RIGHT.
+# =============================================================================
+
+
+# #############################################################################
+# PARÂMETROS PRINCIPAIS — CONFERIR ANTES DE CADA SESSÃO
+# #############################################################################
+
+
+# =============================================================================
+# 1. EXPERIMENTO
+# =============================================================================
 
 experiment:
-  subject_id:   "TT000"
-  session_id:   1
-  log_root:     "C:/Users/User/Desktop/Dados"
-  exp_name:     "TEST"
-  session_type: "IM_treino"   # valor inicial; o main troca automaticamente por fase
+  subject_id    : "TEST"
+  session_id    : 1
+  exp_name      : "BNI"
+  session_type  : "IM_treino"   # valor inicial; o main altera conforme a fase
+  log_root      : "C:/Users/User/Desktop/Dados"
 
-lsl:
-  marker_name:  "GrazMI_Markers"
-  marker_type:  "Markers"
-  signal_name:  "gHIamp_EEG"
-  signal_type:  "EEG"
-  decoder_name: "Signal"
-  decoder_type: "BCI"
+
+# =============================================================================
+# 2. MODO DE AQUISIÇÃO
+# =============================================================================
+# ESTE É UM DOS PARÂMETROS MAIS IMPORTANTES.
+#
+# true  = usa o sinal simulado
+# false = usa o amplificador g.HIamp
+# =============================================================================
 
 runtime:
-  simulate_signal: true         # true = simulação; false = g.HIamp
+  simulate_signal  : true
+
 
 # =============================================================================
-# PsychoPy — iniciado automaticamente pelo main
+# 3. PROTOCOLO / BLOCOS
 # =============================================================================
-psychopy:
-  enabled: true
-  mode: "psyexp"                # psyexp | auto | script
-  experiment_file: "experiment/Graz_UpperLimb.psyexp"
-  generated_script: "experiment/Graz_UpperLimb_autorun.py"
-  fallback_script: null
-  stim_sequence: "experiment/stims_sequence.csv"
-
-  # null = autodetecta a instalação que consegue importar psychopy.
-  # Se necessário, informe o python.exe do PsychoPy Standalone.
-  python_executable: null
-  compile_version: null
-  compile_if_changed: true
-  inject_session_info: true
-  hide_info_dialog: true
-  new_console: false
-
-  # O PsychoPy pode demorar para carregar. O main avisa no console durante esse
-  # período e só considera timeout depois da tolerância abaixo.
-  pre_launch_pause_s: 2.0
-  startup_grace_s: 10.0
-  startup_status_every_s: 5.0
-  startup_timeout_s: 90.0
-  marker_stall_timeout_s: 60.0
-  exit_grace_s: 5.0
-  max_block_duration_s: null
-
-# =============================================================================
-# Fluxo experimental
-# =============================================================================
-protocol:
-  start_phase: "imagery"        # execution | imagery | online
-  block_end_code: 99
-  block_end_label: "BLOCK_END"
-
-  motor_session_type:   "EM_treino"
-  imagery_session_type: "IM_treino"
-
-  # Ordem online: primeiro COM feedback PCA, depois SEM feedback.
-  # Os dois modos compartilham a mesma pasta S#/online; o nome dos arquivos
-  # (IM_online_PCA / IM_online_sem_feedback) identifica a condição.
-  online_modes:
-    - name: "pca_feedback"
-      label: "Online com feedback PCA"
-      session_type: "IM_online_PCA"
-      feedback_mode: "pca"
-
-    - name: "no_feedback"
-      label: "Online sem feedback"
-      session_type: "IM_online_sem_feedback"
-      feedback_mode: "none"
-
-  min_cv_accuracy: null         # ex.: 0.70; null = decisão manual
-  auto_check_data: true
-  online_model_prefix: "ask"   # ask | latest | auto | caminho explícito
-  model_session_types: ["EM_treino", "IM_treino"]
-
-# Janela Python antiga/diagnóstica. O feedback operacional fica no Unity.
-debug_plot:
-  enabled: false
-  script: "tools/plot_decoder_realtime.py"
-  new_console: false
-
-# =============================================================================
-# Sinal / features / classificador
-# =============================================================================
-fs_hz: 256.0
-n_channels: 16
-
-trial_duration_s: 3.75
-trial_offset_s: 0.0
-window_s: 1.0
-step_s: 0.05
-
-filter_mode: "causal"
-bp_order: 3
-bp_band_hz: [5.0, 40.0]
-
-select_by: "index"
-index_base: 1
-select_channels: []
-
-feature_space: "riemann_pca"
-classifier: "svm_linear"
-pca_dim: 2
-svc_c: 1.0
-cv_splits: 5
-rng_seed: 42
-
-decoder_outlet_name: "Signal"
-decoder_outlet_type: "BCI"
-decoder_lsl_rate_hz: 64.0
-
-# =============================================================================
-# Mapa/representação PCA para o Unity
-# =============================================================================
-# A calibração deixa o par pca_map_<run_id>.json + pca_map_<run_id>.png visível
-# junto aos CSVs de treino. Arquivos técnicos ficam em train/_model/<run_id>
-# e apenas figuras diagnósticas ficam em train/_qc/<run_id>.
-# Ao selecionar o modelo para o online, main.py copia o par ativo para
-# S#/online/pca_map.json + S#/online/pca_map.png. O Unity usa os dois juntos.
-representation_feedback:
-  dimensions: 2
-  name: "PCA"
-  pad_frac: 0.10
-  grid_size: 240
-  density_masses: [0.50, 0.80, 0.95]
-  show_labels: true
-  transform:
-    type: "identity"
-
-# =============================================================================
-# Controle motor online para o Unity
-# =============================================================================
-# O decoder continua publicando:
-#   Signal / BCI = [rep1, rep2, P(left), P(both), P(right)]
+# start_phase define EM QUAL FASE o experimento começa.
 #
-# Esta camada transforma essa informação em uma decisão estável e em posições
-# contínuas das pernas. A entrada depende do ponto PCA atingir a região de maior
-# densidade do treino; a probabilidade ajuda a resolver a classe.
+# Valores possíveis:
+#   execution  = execução motora
+#   imagery    = imagética motora
+#   online     = fase online
+#
+# ESTE É UM DOS PARÂMETROS MAIS IMPORTANTES DO PROTOCOLO.
+# =============================================================================
+
+protocol:
+  start_phase          : "online"   # execution | imagery | online
+
+  # Identificação do final de cada bloco
+  block_end_code       : 99
+  block_end_label      : "BLOCK_END"
+
+  # Nomes usados para salvar os diferentes tipos de sessão
+  motor_session_type   : "EM_treino"
+  imagery_session_type : "IM_treino"
+
+  # ---------------------------------------------------------------------------
+  # BLOCOS ONLINE
+  # ---------------------------------------------------------------------------
+  # Ordem atual:
+  #   1. online com feedback PCA
+  #   2. online sem feedback
+  #
+  # Os dois modos usam a mesma pasta S#/online.
+  # O nome dos arquivos identifica a condição.
+  # ---------------------------------------------------------------------------
+
+  online_modes:
+    - name           : "pca_feedback"
+      label          : "Online com feedback PCA"
+      session_type   : "IM_online_PCA"
+      feedback_mode  : "pca"
+
+    - name           : "no_feedback"
+      label          : "Online sem feedback"
+      session_type   : "IM_online_sem_feedback"
+      feedback_mode  : "none"
+
+  # Critério para seguir automaticamente para o online.
+  # null = decisão manual.
+  min_cv_accuracy      : null
+
+  # Verifica os dados ao final da etapa anterior.
+  auto_check_data      : true
+
+  # Seleção do modelo para a fase online:
+  # ask | latest | auto | caminho explícito
+  online_model_prefix  : "ask"
+
+  # Tipos de sessão aceitos para treinamento/seleção de modelo.
+  model_session_types  : ["EM_treino", "IM_treino"]
+
+
+# #############################################################################
+# CONFIGURAÇÕES TÉCNICAS / AVANÇADAS
+# Normalmente não precisam ser alteradas entre sessões.
+# #############################################################################
+
+
+# =============================================================================
+# 4. STREAMS LSL
+# =============================================================================
+
+lsl:
+  marker_name   : "GrazMI_Markers"
+  marker_type   : "Markers"
+  signal_name   : "gHIamp_EEG"
+  signal_type   : "EEG"
+  decoder_name  : "Signal"
+  decoder_type  : "BCI"
+
+
+# =============================================================================
+# 5. PSYCHOPY
+# =============================================================================
+# O PsychoPy é iniciado automaticamente pelo main.py.
+# =============================================================================
+
+psychopy:
+  enabled                 : true
+  mode                    : "psyexp"   # psyexp | auto | script
+
+  experiment_file         : "experiment/Graz_UpperLimb.psyexp"
+  generated_script        : "experiment/Graz_UpperLimb_autorun.py"
+  fallback_script         : null
+  stim_sequence           : "experiment/stims_sequence.csv"
+
+  # null = tenta detectar automaticamente uma instalação do Python
+  # que consiga importar PsychoPy.
+  python_executable       : null
+
+  compile_version         : null
+  compile_if_changed      : true
+  inject_session_info     : true
+  hide_info_dialog        : true
+  new_console             : false
+
+  # Tempos de inicialização e tolerância.
+  pre_launch_pause_s      : 2.0
+  startup_grace_s         : 10.0
+  startup_status_every_s  : 5.0
+  startup_timeout_s       : 90.0
+  marker_stall_timeout_s  : 60.0
+  exit_grace_s            : 5.0
+  max_block_duration_s    : null
+
+
+# =============================================================================
+# 6. SINAL / FEATURES / CLASSIFICADOR
+# =============================================================================
+
+fs_hz                    : 256.0
+n_channels               : 16
+
+trial_duration_s         : 4.0
+trial_offset_s           : 0.0
+window_s                 : 1.0
+step_s                   : 0.05
+
+filter_mode              : "causal"
+bp_order                 : 3
+bp_band_hz               : [5.0, 40.0]
+
+select_by                : "index"
+index_base               : 1
+select_channels          : []
+
+feature_space            : "riemann_pca"
+classifier               : "svm_linear"
+pca_dim                  : 2
+svc_c                    : 1.0
+cv_splits                : 5
+rng_seed                 : 42
+
+decoder_outlet_name      : "Signal"
+decoder_outlet_type      : "BCI"
+decoder_lsl_rate_hz      : 64.0
+
+
+# =============================================================================
+# 7. REPRESENTAÇÃO PCA / FEEDBACK PARA O UNITY
+# =============================================================================
+
+representation_feedback:
+  dimensions       : 2
+  name             : "PCA"
+  pad_frac         : 0.10
+  grid_size        : 240
+  density_masses   : [0.50, 0.80, 0.95]
+  show_labels      : true
+
+  transform:
+    type           : "identity"
+
+
+# =============================================================================
+# 8. CONTROLE MOTOR ONLINE / UNITY
+# =============================================================================
+
 control:
-  enabled: true
-  outlet_name: "GrazMI_Control"
-  outlet_type: "BCIControl"
+  enabled                     : true
+  outlet_name                 : "GrazMI_Control"
+  outlet_type                 : "BCIControl"
 
-  # Histerese espacial. 0.50 é o núcleo; 0.80 é uma região mais ampla.
-  entry_density_mass: 0.50
-  hold_density_mass: 0.80
+  # Histerese espacial
+  entry_density_mass          : 0.50
+  hold_density_mass           : 0.80
 
-  # O ponto precisa permanecer nessa condição por algum tempo para evitar flicker.
-  enter_persist_s: 0.25
-  exit_persist_s: 0.20
+  # Persistência mínima para evitar alternâncias rápidas
+  enter_persist_s             : 0.25
+  exit_persist_s              : 0.20
 
-  # Probabilidade do SVM é usada como confirmação / desempate.
-  min_probability: 0.40
-  min_probability_margin: 0.05
+  # Confirmação / desempate pela probabilidade do SVM
+  min_probability             : 0.40
+  min_probability_margin      : 0.05
 
-  # Permite usar modelos antigos sem polígonos de densidade. Em modelos novos,
-  # o gate espacial é sempre usado quando as regiões estão presentes no JSON.
-  allow_probability_fallback: true
+  # Compatibilidade com modelos antigos sem regiões de densidade
+  allow_probability_fallback  : true
 
-  # Curva convencionada de movimento. 0 -> 1 em movement_rise_s;
-  # ao sair da região, 1 -> 0 em movement_fall_s a partir da posição atual.
-  movement_rise_s: 1.20
-  movement_fall_s: 0.80
-  output_rate_hz: 60.0
-  decoder_stale_s: 0.60
+  # Dinâmica do movimento no Unity
+  movement_rise_s             : 1.20
+  movement_fall_s             : 0.80
+  output_rate_hz              : 60.0
+  decoder_stale_s             : 0.60
 
-# QC
-check_tmin_s: -0.5
-check_save_png: true
 
 # =============================================================================
-# Sinal simulado
+# 9. CONTROLE DE QUALIDADE
 # =============================================================================
+
+check_tmin_s              : -0.5
+check_save_png            : true
+
+
+# =============================================================================
+# 10. SINAL SIMULADO
+# =============================================================================
+# Usado apenas quando:
+#     runtime.simulate_signal = true
+#
 # Cada par representa o peso do padrão nas duas metades dos canais simulados.
-# BOTH cria atividade bilateral e só será usado quando BOTH_MI_STIM aparecer
-# nos marcadores produzidos pela stims_sequence.
-sim_chunk: 10
-sim_noise_std: 0.8
-sim_burst_freq_hz: 10.0
-sim_burst_amp: 1.5
-sim_taper_frac: 0.2
-sim_profile_left_mi:  [1.0, 0.3]
-sim_profile_both_mi:  [1.0, 1.0]
-sim_profile_right_mi: [0.3, 1.0]
+# BOTH produz atividade bilateral e só é usado quando BOTH_MI_STIM aparece
+# nos marcadores do protocolo.
+# =============================================================================
+
+sim_chunk                 : 10
+sim_noise_std             : 0.8
+sim_burst_freq_hz         : 10.0
+sim_burst_amp             : 1.5
+sim_taper_frac            : 0.2
+
+sim_profile_left_mi       : [1.0, 0.3]
+sim_profile_both_mi       : [1.0, 1.0]
+sim_profile_right_mi      : [0.3, 1.0]
+
 
 # =============================================================================
-# Marcadores LSL
+# 11. CÓDIGOS DOS MARCADORES LSL
 # =============================================================================
+
 codes:
-  left_mi: 3
-  right_mi: 4
-  both_mi: 7
-  attempt: 5
-  block_end: 99
+  left_mi     : 3
+  right_mi    : 4
+  both_mi     : 7
+  attempt     : 5
+  block_end   : 99
+
   map:
-    "1":  "BASELINE"
-    "2":  "ATTENTION"
-    "3":  "LEFT_MI_STIM"
-    "4":  "RIGHT_MI_STIM"
-    "5":  "ATTEMPT"
-    "6":  "REST"
-    "7":  "BOTH_MI_STIM"
-    "99": "BLOCK_END"
+    "1"       : "BASELINE"
+    "2"       : "ATTENTION"
+    "3"       : "LEFT_MI_STIM"
+    "4"       : "RIGHT_MI_STIM"
+    "5"       : "ATTEMPT"
+    "6"       : "REST"
+    "7"       : "BOTH_MI_STIM"
+    "99"      : "BLOCK_END"
+
 
 # =============================================================================
-# g.HIamp (usado apenas quando runtime.simulate_signal=false)
+# 12. g.HIamp
 # =============================================================================
+# Usado apenas quando:
+#     runtime.simulate_signal = false
+# =============================================================================
+
 hiamp:
-  gtec_root: "D:/Documentos/gtec/gNEEDaccessClientAPI"
-  acquisition_channels: 16
-  reference_channel: 16
-  drop_reference_channel: true
-  reference_mode: "car"
-  chunk: 10
+  gtec_root               : "D:/Documentos/gtec/gNEEDaccessClientAPI"
+  acquisition_channels    : 16
+  reference_channel       : 16
+  drop_reference_channel  : true
+  reference_mode          : "car"
+  chunk                   : 10
+
+
+# =============================================================================
+# 13. DEBUG / JANELA DIAGNÓSTICA
+# =============================================================================
+# O feedback operacional principal permanece no Unity.
+# =============================================================================
+
+debug_plot:
+  enabled      : false
+  script       : "tools/plot_decoder_realtime.py"
+  new_console  : false

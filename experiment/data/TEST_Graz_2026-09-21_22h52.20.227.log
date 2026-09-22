@@ -1,0 +1,24 @@
+3.8693 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+4.2277 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+4.2277 	INFO 	OpenGL version supported by driver is 4..
+4.2428 	EXP 	Created window1 = Window(allowGUI=True, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000149D60BB0D0>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x00000149D60BB040>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([1.    , 0.9843, 0.7412]), colorSpace='rgb', depthBits=8, fullscr=False, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x00000149D60C9550>, multiSample=False, name='window1', numSamples=2, pos=[130.0, 540.0], screen=0, size=array([640, 360]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+4.2428 	EXP 	window1: backgroundImage = ''
+4.2428 	EXP 	window1: backgroundFit = 'none'
+4.6508 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+4.6508 	EXP 	window1: recordFrameIntervals = False
+4.8873 	EXP 	window1: recordFrameIntervals = True
+4.9240 	WARNING 	t of last frame was 23.52ms (=1/42)
+4.9605 	WARNING 	t of last frame was 23.57ms (=1/42)
+5.0094 	WARNING 	t of last frame was 23.77ms (=1/42)
+5.0579 	WARNING 	t of last frame was 23.76ms (=1/42)
+5.0942 	WARNING 	Multiple dropped frames have occurred - I'll stop bothering you about them!
+6.5692 	WARNING 	Couldn't measure a consistent frame rate!
+  - Is your graphics card set to sync to vertical blank?
+  - Are you running other processes on your computer?
+
+6.6344 	INFO 	keyboard.Keyboard is using ptb backend.
+6.6344 	EXP 	Graz: status = STARTED
+6.6540 	ERROR 	Couldn't find image stims/cross.png; check path? (tried: C:\Users\User\Documents\GitHub\real_time_bci\experiment\stims\cross.png)
+6.6866 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\experiment\data\TEST_Graz_2026-09-21_22h52.20.227.psydat
+6.6885 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\experiment\\data\\TEST_Graz_2026-09-21_22h52.20.227.csv'
+6.6886 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2025.1.1),
-    on September 07, 2026, at 23:19
+    on September 21, 2026, at 23:30
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -46,7 +46,7 @@ expVersion = ''
 runAtExit = []
 # information about this experiment
 expInfo = {
-    'participant': os.environ.get("BCI_SUBJECT_ID", 'TT000'),
+    'participant': os.environ.get("BCI_SUBJECT_ID", 'TEST'),
     'session': os.environ.get("BCI_SESSION_ID", '1'),
     'date|hid': data.getDateStr(),
     'expName|hid': expName,
@@ -64,7 +64,7 @@ or run the experiment with `--pilot` as an argument. To change what pilot
 PILOTING = core.setPilotModeFromArgs()
 # start off with values from experiment settings
 _fullScr = False
-_winSize = [640, 360]
+_winSize = [700, 500]
 # if in pilot mode, apply overrides according to preferences
 if PILOTING:
     # force windowed mode
@@ -379,7 +379,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # Mapa Graz
     code_map = {
         'BASELINE':1, 'ATTENTION':2, 'LEFT_MI_STIM':3,
-        'RIGHT_MI_STIM':4, 'BOTH_MI_STIM':7, 'ATTEMPT':5, 'REST':6, 'BLOCK_END':99
+        'RIGHT_MI_STIM':4, 'ATTEMPT':5, 'REST':6, 'BLOCK_END':99
     }
     
     def _resolve_code(label):
@@ -427,7 +427,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     attention_cross = visual.ImageStim(
         win=win,
         name='attention_cross', 
-        image='../stims/cross.png', mask=None, anchor='center',
+        image='cross_green.png', mask=None, anchor='center',
         ori=0.0, pos=(0, 0), draggable=False, size=(0.5, 0.5),
         color=[1,1,1], colorSpace='rgb', opacity=None,
         flipHoriz=False, flipVert=False,
@@ -447,8 +447,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     attempt = visual.ImageStim(
         win=win,
         name='attempt', 
-        image='../stims/cross.png', mask=None, anchor='center',
-        ori=0.0, pos=(0, 0), draggable=False, size=(0.5, 0.5),
+        image='cross_red.png', mask=None, anchor='center',
+        ori=0.0, pos=(0, 0), draggable=False, size=(0.5,0.5),
         color=[1,1,1], colorSpace='rgb', opacity=None,
         flipHoriz=False, flipVert=False,
         texRes=128.0, interpolate=True, depth=0.0)
@@ -457,8 +457,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     image_2 = visual.ImageStim(
         win=win,
         name='image_2', 
-        image='../stims/rest.png', mask=None, anchor='center',
-        ori=0.0, pos=(0, 0), draggable=False, size=(0.5, 0.5),
+        image='rest.png', mask=None, anchor='center',
+        ori=0.0, pos=(0, 0), draggable=False, size=(1.0, 1.0),
         color=[1,1,1], colorSpace='rgb', opacity=None,
         flipHoriz=False, flipVert=False,
         texRes=128.0, interpolate=True, depth=-1.0)
@@ -841,7 +841,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # update component parameters for each repeat
         motor_cue.setImage(img)
         # Run 'Begin Routine' code from lsl_send_stim
-        # event_label vem do CSV na linha atual (LEFT_MI_STIM, BOTH_MI_STIM ou RIGHT_MI_STIM)
+        # event_label vem do CSV na linha atual (p.ex., 'LEFT_MI_STIM' ou 'RIGHT_MI_STIM')
         # Image component da rotina deve estar com Image: $img (do CSV) e "Set every repeat".
         send_mark_label(event_label, tag='STIM')
         
@@ -867,7 +867,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         
         # --- Run Routine "Stim" ---
         Stim.forceEnded = routineForceEnded = not continueRoutine
-        while continueRoutine and routineTimer.getTime() < 1.25:
+        while continueRoutine and routineTimer.getTime() < 1.5:
             # if trial has changed, end Routine now
             if hasattr(thisTrial, 'status') and thisTrial.status == STOPPING:
                 continueRoutine = False
@@ -901,7 +901,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if motor_cue is stopping this frame...
             if motor_cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > motor_cue.tStartRefresh + 1.25-frameTolerance:
+                if tThisFlipGlobal > motor_cue.tStartRefresh + 1.5-frameTolerance:
                     # keep track of stop time/frame for later
                     motor_cue.tStop = t  # not accounting for scr refresh
                     motor_cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -957,7 +957,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         elif Stim.forceEnded:
             routineTimer.reset()
         else:
-            routineTimer.addTime(-1.250000)
+            routineTimer.addTime(-1.500000)
         
         # --- Prepare to start Routine "Attempt" ---
         # create an object to store info about Routine Attempt
@@ -995,7 +995,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         
         # --- Run Routine "Attempt" ---
         Attempt.forceEnded = routineForceEnded = not continueRoutine
-        while continueRoutine and routineTimer.getTime() < 3.75:
+        while continueRoutine and routineTimer.getTime() < 4.0:
             # if trial has changed, end Routine now
             if hasattr(thisTrial, 'status') and thisTrial.status == STOPPING:
                 continueRoutine = False
@@ -1029,7 +1029,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if attempt is stopping this frame...
             if attempt.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > attempt.tStartRefresh + 3.75-frameTolerance:
+                if tThisFlipGlobal > attempt.tStartRefresh + 4.0-frameTolerance:
                     # keep track of stop time/frame for later
                     attempt.tStop = t  # not accounting for scr refresh
                     attempt.tStopRefresh = tThisFlipGlobal  # on global time
@@ -1085,7 +1085,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         elif Attempt.forceEnded:
             routineTimer.reset()
         else:
-            routineTimer.addTime(-3.750000)
+            routineTimer.addTime(-4.000000)
         
         # --- Prepare to start Routine "Rest" ---
         # create an object to store info about Routine Rest
