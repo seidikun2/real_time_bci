@@ -25,7 +25,7 @@
 
 experiment:
   subject_id    : "TEST"
-  session_id    : 2
+  session_id    : 1
   exp_name      : "TEST"
   session_type  : "IM_treino"   # o main altera conforme a fase
   log_root      : "C:/Users/User/Desktop/Dados"
@@ -144,8 +144,9 @@ representation_feedback:
   transform:
     type: "identity"
 
-# O stream mantém [rep1, rep2, left, both, right] para compatibilidade com Unity.
-# REST_STIM não ocupa canal motor: REST = nenhuma perna ativada.
+# Signal / BCI publica sempre:
+# [rep1, rep2, p_left, p_rest, p_right, active_left, active_rest, active_right]
+# GrazMI_Control continua sendo a camada exclusiva de movimento do avatar.
 control:
   enabled                     : true
   outlet_name                 : "GrazMI_Control"
@@ -204,6 +205,6 @@ hiamp:
   chunk                   : 10
 
 debug_plot:
-  enabled      : false
+  enabled      : true
   script       : "tools/plot_decoder_realtime.py"
   new_console  : false

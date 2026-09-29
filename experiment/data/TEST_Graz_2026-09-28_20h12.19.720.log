@@ -1,0 +1,182 @@
+3.9171 	INFO 	Loaded monitor calibration from ['2025_08_24 15:35']
+4.2821 	INFO 	Using renderer 'GeForce GT 730/PCIe/SSE2' for graphics
+4.2822 	INFO 	OpenGL version supported by driver is 4..
+4.2971 	EXP 	Created window1 = Window(allowGUI=True, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000020207501F40>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000020207501EE0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([1.    , 0.9843, 0.7412]), colorSpace='rgb', depthBits=8, fullscr=False, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x0000020207497430>, multiSample=False, name='window1', numSamples=2, pos=[130.0, 540.0], screen=0, size=array([640, 360]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+4.2972 	EXP 	window1: backgroundImage = ''
+4.2972 	EXP 	window1: backgroundFit = 'none'
+4.6950 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+4.6950 	EXP 	window1: recordFrameIntervals = False
+4.9248 	EXP 	window1: recordFrameIntervals = True
+4.9790 	WARNING 	t of last frame was 21.01ms (=1/47)
+5.0782 	WARNING 	t of last frame was 20.18ms (=1/49)
+5.1338 	WARNING 	t of last frame was 24.61ms (=1/40)
+5.1844 	WARNING 	t of last frame was 24.60ms (=1/40)
+5.2692 	WARNING 	Multiple dropped frames have occurred - I'll stop bothering you about them!
+6.3259 	EXP 	Screen (0) actual frame rate measured at 60.06Hz
+6.3260 	EXP 	window1: recordFrameIntervals = False
+6.3943 	INFO 	keyboard.Keyboard is using ptb backend.
+6.3944 	EXP 	Graz: status = STARTED
+6.4886 	EXP 	Created attention_cross = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='cross.png', interpolate=True, mask=None, maskParams=None, name='attention_cross', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+6.4977 	EXP 	Created motor_cue = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='default.png', interpolate=True, mask=None, maskParams=None, name='motor_cue', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([1., 1.]), texRes=128.0, units='height', win=Window(...))
+6.5696 	EXP 	Created attempt = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, image='cross.png', interpolate=True, mask=None, maskParams=None, name='attempt', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+6.6385 	EXP 	Created image_2 = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-1.0, draggable=False, flipHoriz=False, flipVert=False, image='rest.png', interpolate=True, mask=None, maskParams=None, name='image_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.5, 0.5]), texRes=128.0, units='height', win=Window(...))
+0.0135 	EXP 	Imported stims_sequence.csv as conditions, 15 conditions, 2 params
+0.0138 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'img': 'left_foot.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+3.0124 	EXP 	attention_cross: autoDraw = True
+5.0780 	EXP 	attention_cross: autoDraw = False
+5.0780 	EXP 	attention_cross: autoDraw = False
+5.0780 	EXP 	motor_cue: image = 'left_foot.png'
+5.0780 	EXP 	motor_cue: autoDraw = True
+6.2912 	EXP 	motor_cue: autoDraw = False
+6.2912 	EXP 	attempt: autoDraw = True
+10.0231 	EXP 	attempt: autoDraw = False
+10.0231 	EXP 	image_2: autoDraw = True
+12.0089 	EXP 	New trial (rep=0, index=1): <Trial 1 (1 in rep 0) data={'img': 'rest.png', 'event_label': 'REST_STIM', 'thisN': 1, 'thisTrialN': 1, 'thisRepN': 0}>
+12.0217 	EXP 	image_2: autoDraw = False
+12.0217 	EXP 	image_2: autoDraw = False
+12.0217 	EXP 	attention_cross: autoDraw = True
+14.0601 	EXP 	attention_cross: autoDraw = False
+14.0601 	EXP 	attention_cross: autoDraw = False
+14.0601 	EXP 	motor_cue: image = 'rest.png'
+14.0601 	EXP 	motor_cue: autoDraw = True
+15.2962 	EXP 	motor_cue: autoDraw = False
+15.2962 	EXP 	attempt: autoDraw = True
+19.0227 	EXP 	attempt: autoDraw = False
+19.0227 	EXP 	image_2: autoDraw = True
+21.0129 	EXP 	New trial (rep=0, index=2): <Trial 2 (2 in rep 0) data={'img': 'left_foot.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 2, 'thisTrialN': 2, 'thisRepN': 0}>
+21.0260 	EXP 	image_2: autoDraw = False
+21.0260 	EXP 	attention_cross: autoDraw = True
+23.0753 	EXP 	attention_cross: autoDraw = False
+23.0753 	EXP 	motor_cue: image = 'left_foot.png'
+23.0753 	EXP 	motor_cue: autoDraw = True
+24.2756 	EXP 	motor_cue: autoDraw = False
+24.2756 	EXP 	attempt: autoDraw = True
+28.0424 	EXP 	attempt: autoDraw = False
+28.0424 	EXP 	image_2: autoDraw = True
+30.0124 	EXP 	New trial (rep=0, index=3): <Trial 3 (3 in rep 0) data={'img': 'right_foot.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 3, 'thisTrialN': 3, 'thisRepN': 0}>
+30.0255 	EXP 	image_2: autoDraw = False
+30.0255 	EXP 	attention_cross: autoDraw = True
+32.0656 	EXP 	attention_cross: autoDraw = False
+32.0656 	EXP 	motor_cue: image = 'right_foot.png'
+32.0656 	EXP 	motor_cue: autoDraw = True
+33.2934 	EXP 	motor_cue: autoDraw = False
+33.2934 	EXP 	attempt: autoDraw = True
+37.0264 	EXP 	attempt: autoDraw = False
+37.0264 	EXP 	image_2: autoDraw = True
+39.0118 	EXP 	New trial (rep=0, index=4): <Trial 4 (4 in rep 0) data={'img': 'left_foot.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 4, 'thisTrialN': 4, 'thisRepN': 0}>
+39.0249 	EXP 	image_2: autoDraw = False
+39.0249 	EXP 	attention_cross: autoDraw = True
+41.0783 	EXP 	attention_cross: autoDraw = False
+41.0783 	EXP 	motor_cue: image = 'left_foot.png'
+41.0783 	EXP 	motor_cue: autoDraw = True
+42.2742 	EXP 	motor_cue: autoDraw = False
+42.2742 	EXP 	attempt: autoDraw = True
+46.0233 	EXP 	attempt: autoDraw = False
+46.0233 	EXP 	image_2: autoDraw = True
+48.0082 	EXP 	New trial (rep=0, index=5): <Trial 5 (5 in rep 0) data={'img': 'right_foot.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 5, 'thisTrialN': 5, 'thisRepN': 0}>
+48.0214 	EXP 	image_2: autoDraw = False
+48.0214 	EXP 	image_2: autoDraw = False
+48.0214 	EXP 	attention_cross: autoDraw = True
+50.0725 	EXP 	attention_cross: autoDraw = False
+50.0725 	EXP 	motor_cue: image = 'right_foot.png'
+50.0725 	EXP 	motor_cue: autoDraw = True
+51.2867 	EXP 	motor_cue: autoDraw = False
+51.2867 	EXP 	attempt: autoDraw = True
+55.0235 	EXP 	attempt: autoDraw = False
+55.0235 	EXP 	image_2: autoDraw = True
+57.0183 	EXP 	New trial (rep=0, index=6): <Trial 6 (6 in rep 0) data={'img': 'rest.png', 'event_label': 'REST_STIM', 'thisN': 6, 'thisTrialN': 6, 'thisRepN': 0}>
+57.0424 	EXP 	image_2: autoDraw = False
+57.0424 	EXP 	attention_cross: autoDraw = True
+59.0782 	EXP 	attention_cross: autoDraw = False
+59.0782 	EXP 	motor_cue: image = 'rest.png'
+59.0782 	EXP 	motor_cue: autoDraw = True
+60.2853 	EXP 	motor_cue: autoDraw = False
+60.2853 	EXP 	attempt: autoDraw = True
+64.0358 	EXP 	attempt: autoDraw = False
+64.0358 	EXP 	image_2: autoDraw = True
+66.0179 	EXP 	New trial (rep=0, index=7): <Trial 7 (7 in rep 0) data={'img': 'left_foot.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 7, 'thisTrialN': 7, 'thisRepN': 0}>
+66.0429 	EXP 	image_2: autoDraw = False
+66.0429 	EXP 	attention_cross: autoDraw = True
+68.0728 	EXP 	attention_cross: autoDraw = False
+68.0728 	EXP 	motor_cue: image = 'left_foot.png'
+68.0728 	EXP 	motor_cue: autoDraw = True
+69.2842 	EXP 	motor_cue: autoDraw = False
+69.2842 	EXP 	attempt: autoDraw = True
+73.0233 	EXP 	attempt: autoDraw = False
+73.0233 	EXP 	image_2: autoDraw = True
+75.0102 	EXP 	New trial (rep=0, index=8): <Trial 8 (8 in rep 0) data={'img': 'rest.png', 'event_label': 'REST_STIM', 'thisN': 8, 'thisTrialN': 8, 'thisRepN': 0}>
+75.0233 	EXP 	image_2: autoDraw = False
+75.0233 	EXP 	attention_cross: autoDraw = True
+77.0943 	EXP 	attention_cross: autoDraw = False
+77.0943 	EXP 	motor_cue: image = 'rest.png'
+77.0943 	EXP 	motor_cue: autoDraw = True
+78.2861 	EXP 	motor_cue: autoDraw = False
+78.2861 	EXP 	attempt: autoDraw = True
+82.0407 	EXP 	attempt: autoDraw = False
+82.0407 	EXP 	image_2: autoDraw = True
+84.0100 	EXP 	New trial (rep=0, index=9): <Trial 9 (9 in rep 0) data={'img': 'left_foot.png', 'event_label': 'LEFT_MI_STIM', 'thisN': 9, 'thisTrialN': 9, 'thisRepN': 0}>
+84.0229 	EXP 	image_2: autoDraw = False
+84.0229 	EXP 	attention_cross: autoDraw = True
+86.0701 	EXP 	attention_cross: autoDraw = False
+86.0701 	EXP 	motor_cue: image = 'left_foot.png'
+86.0701 	EXP 	motor_cue: autoDraw = True
+87.2835 	EXP 	motor_cue: autoDraw = False
+87.2835 	EXP 	attempt: autoDraw = True
+91.0415 	EXP 	attempt: autoDraw = False
+91.0415 	EXP 	image_2: autoDraw = True
+93.0228 	EXP 	New trial (rep=0, index=10): <Trial 10 (10 in rep 0) data={'img': 'rest.png', 'event_label': 'REST_STIM', 'thisN': 10, 'thisTrialN': 10, 'thisRepN': 0}>
+93.0358 	EXP 	image_2: autoDraw = False
+93.0358 	EXP 	attention_cross: autoDraw = True
+95.0927 	EXP 	attention_cross: autoDraw = False
+95.0927 	EXP 	motor_cue: image = 'rest.png'
+95.0927 	EXP 	motor_cue: autoDraw = True
+96.2851 	EXP 	motor_cue: autoDraw = False
+96.2851 	EXP 	attempt: autoDraw = True
+100.0333 	EXP 	attempt: autoDraw = False
+100.0333 	EXP 	image_2: autoDraw = True
+102.0197 	EXP 	New trial (rep=0, index=11): <Trial 11 (11 in rep 0) data={'img': 'right_foot.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 11, 'thisTrialN': 11, 'thisRepN': 0}>
+102.0329 	EXP 	image_2: autoDraw = False
+102.0329 	EXP 	attention_cross: autoDraw = True
+104.0774 	EXP 	attention_cross: autoDraw = False
+104.0774 	EXP 	motor_cue: image = 'right_foot.png'
+104.0774 	EXP 	motor_cue: autoDraw = True
+105.2925 	EXP 	motor_cue: autoDraw = False
+105.2925 	EXP 	attempt: autoDraw = True
+109.0403 	EXP 	attempt: autoDraw = False
+109.0403 	EXP 	image_2: autoDraw = True
+111.0120 	EXP 	New trial (rep=0, index=12): <Trial 12 (12 in rep 0) data={'img': 'right_foot.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 12, 'thisTrialN': 12, 'thisRepN': 0}>
+111.0252 	EXP 	image_2: autoDraw = False
+111.0252 	EXP 	attention_cross: autoDraw = True
+113.0518 	EXP 	attention_cross: autoDraw = False
+113.0518 	EXP 	attention_cross: autoDraw = False
+113.0518 	EXP 	motor_cue: image = 'right_foot.png'
+113.0518 	EXP 	motor_cue: autoDraw = True
+114.2903 	EXP 	motor_cue: autoDraw = False
+114.2903 	EXP 	attempt: autoDraw = True
+118.0350 	EXP 	attempt: autoDraw = False
+118.0350 	EXP 	image_2: autoDraw = True
+120.0161 	EXP 	New trial (rep=0, index=13): <Trial 13 (13 in rep 0) data={'img': 'rest.png', 'event_label': 'REST_STIM', 'thisN': 13, 'thisTrialN': 13, 'thisRepN': 0}>
+120.0407 	EXP 	image_2: autoDraw = False
+120.0407 	EXP 	attention_cross: autoDraw = True
+122.0909 	EXP 	attention_cross: autoDraw = False
+122.0909 	EXP 	motor_cue: image = 'rest.png'
+122.0909 	EXP 	motor_cue: autoDraw = True
+123.2829 	EXP 	motor_cue: autoDraw = False
+123.2829 	EXP 	attempt: autoDraw = True
+127.0341 	EXP 	attempt: autoDraw = False
+127.0341 	EXP 	image_2: autoDraw = True
+129.0178 	EXP 	New trial (rep=0, index=14): <Trial 14 (14 in rep 0) data={'img': 'right_foot.png', 'event_label': 'RIGHT_MI_STIM', 'thisN': 14, 'thisTrialN': 14, 'thisRepN': 0}>
+129.0423 	EXP 	image_2: autoDraw = False
+129.0423 	EXP 	attention_cross: autoDraw = True
+131.0670 	EXP 	attention_cross: autoDraw = False
+131.0670 	EXP 	motor_cue: image = 'right_foot.png'
+131.0670 	EXP 	motor_cue: autoDraw = True
+132.2913 	EXP 	motor_cue: autoDraw = False
+132.2913 	EXP 	attempt: autoDraw = True
+136.0531 	EXP 	attempt: autoDraw = False
+136.0531 	EXP 	image_2: autoDraw = True
+138.0307 	EXP 	image_2: autoDraw = False
+138.0309 	EXP 	Graz: status = STOPPED
+138.0650 	INFO 	saved data to 'C:\\Users\\User\\Documents\\GitHub\\real_time_bci\\experiment\\data\\TEST_Graz_2026-09-28_20h12.19.720.csv'
+138.0659 	INFO 	saved data to C:\Users\User\Documents\GitHub\real_time_bci\experiment\data\TEST_Graz_2026-09-28_20h12.19.720.psydat
+138.2205 	WARNING 	Stopping key buffers but this could be dangerous ifother keyboards rely on the same.

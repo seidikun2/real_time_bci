@@ -263,7 +263,7 @@ def run_block(
     start_thread(threads, run_receive, cfg, mode, stop_event)
 
     if decoder:
-        # Decoder: publica rep1/rep2 + probabilidades LEFT/BOTH/RIGHT.
+        # Decoder: publica rep1/rep2 + P(LEFT/REST/RIGHT) + flags de classes ativas.
         start_thread(
             threads,
             run_realtime_decoder,
@@ -274,7 +274,7 @@ def run_block(
             feedback_mode,
         )
         # Controlador: usa densidade PCA + probabilidades + histerese temporal
-        # e publica a posição contínua das pernas para o Unity.
+        # e publica left_leg/right_leg em GrazMI_Control para mover o avatar.
         start_thread(
             threads,
             run_intention_controller,
@@ -703,18 +703,31 @@ def start_debug_plot(cfg: AppConfig, raw: dict, model_ref: str | None = None) ->
     if not script.exists():
         print(f"[main] Debug plot habilitado, mas não encontrado: {script}")
         return None
+    ccfg = raw.get("control", {}) or {}
     cmd = [
         sys.executable, str(script),
         "--decoder-name", getattr(cfg.decoder, "outlet_name", "Signal"),
         "--decoder-type", getattr(cfg.decoder, "outlet_type", "BCI"),
+        "--control-name", str(ccfg.get("outlet_name", "GrazMI_Control")),
+        "--control-type", str(ccfg.get("outlet_type", "BCIControl")),
         "--marker-name", getattr(cfg.lsl, "marker_name", "GrazMI_Markers"),
         "--marker-type", getattr(cfg.lsl, "marker_type", "Markers"),
     ]
     meta = read_model_meta(model_ref) if model_ref else {}
+
+    # A dashboard usa o mapa canônico publicado para o online. O JSON define
+    # limites e aponta para a imagem estática com as curvas KDE da calibração.
+    map_json = session_root(cfg) / "online" / "pca_map.json"
+    if not map_json.exists() and model_ref:
+        resolved = _map_path_from_meta(model_ref, meta)
+        map_json = Path(resolved) if resolved else map_json
+    if map_json.exists():
+        cmd += ["--pca-map-json", str(map_json)]
+
     xlim, ylim = meta.get("pca_train_xlim"), meta.get("pca_train_ylim")
     if xlim and ylim:
         cmd += ["--pca-xlim", str(xlim[0]), str(xlim[1]), "--pca-ylim", str(ylim[0]), str(ylim[1])]
-    print("[main] Abrindo janela diagnóstica Python (debug_plot.enabled=true).")
+    print("[main] Abrindo dashboard Python PCA + probabilidades + controle (debug_plot.enabled=true).")
     flags = 0
     if os.name == "nt" and bool(dcfg.get("new_console", False)):
         flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)

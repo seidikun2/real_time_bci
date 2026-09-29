@@ -7,7 +7,7 @@ Inferência contínua com a mesma lógica de feature do treino:
 - usa window_s/epoch_s do modelo para a janela contínua;
 - usa step_s do modelo/config para a frequência de inferência;
 - aplica o mesmo filtro causal contínuo usado no treino;
-- publica [rep1, rep2, P(left), P(both), P(right)] no LSL;
+- publica rep1/rep2 + probabilidades contínuas LEFT/REST/RIGHT + flags de classes ativas;
 - rep1/rep2 são a representação FINAL do feedback (PCA puro hoje; alinhada no futuro).
 """
 
@@ -23,7 +23,7 @@ from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_c
 
 from .config_models import AppConfig
 from .representation_feedback import transform_online_representation
-from .class_schema import MOTOR_CLASS_ORDER
+from .feedback_contract import SIGNAL_CHANNELS, classifier_probabilities, signal_vector
 
 
 def log(msg: str) -> None:
@@ -136,20 +136,20 @@ def make_outlet_unified(
     representation_meta: Optional[Dict[str, Any]] = None,
     feedback_mode: str = "pca",
 ) -> StreamOutlet:
-    """
-    Primeiro par de canais = coordenadas da representação FINAL do feedback.
-    Mantemos 5 canais e a ordem existente para não quebrar o Unity.
-    """
-    info = StreamInfo(name, stype, 5, srate, "float32")
+    """Cria o contrato fixo de 8 canais do feedback contínuo."""
+    info = StreamInfo(name, stype, len(SIGNAL_CHANNELS), srate, "float32")
     root = info.desc()
 
     desc = root.append_child("channels")
-    for lab in ["rep1", "rep2", "left", "both", "right"]:
+    for lab in SIGNAL_CHANNELS:
         ch = desc.append_child("channel")
         ch.append_child_value("label", lab)
-        if lab in {"left", "both", "right"}:
+        if lab.startswith("p_"):
             ch.append_child_value("unit", "probability")
             ch.append_child_value("type", "BCIProbability")
+        elif lab.startswith("active_"):
+            ch.append_child_value("unit", "binary")
+            ch.append_child_value("type", "BCIClassActive")
         else:
             ch.append_child_value("unit", "a.u.")
             ch.append_child_value("type", "BCIRepresentation")
@@ -163,7 +163,7 @@ def make_outlet_unified(
         if rep.get("transform_type"):
             root.append_child_value("representation_transform", str(rep["transform_type"]))
 
-    root.append_child_value("decoder_semantics", "rep1,rep2,P(left),P(both),P(right)")
+    root.append_child_value("decoder_semantics", ",".join(SIGNAL_CHANNELS))
     root.append_child_value("feedback_mode", str(feedback_mode))
     root.append_child_value("feedback_enabled", "true" if str(feedback_mode).lower() == "pca" else "false")
 
@@ -223,51 +223,19 @@ def open_csv_logger(cfg: AppConfig, mode: str, feedback_mode: str = "pca"):
     # pca1_raw/pca2_raw ficam no log para diagnóstico e retrocompatibilidade.
     # rep1/rep2 são exatamente as coordenadas enviadas ao Unity.
     w.writerow([
-        "iso_time",
-        "lsl_time_s",
-        "recv_time_s",
-        "pca1_raw",
-        "pca2_raw",
-        "rep1",
-        "rep2",
-        "left",
-        "both",
-        "right",
+        "iso_time", "lsl_time_s", "recv_time_s",
+        "pca1_raw", "pca2_raw", "rep1", "rep2",
+        "p_left", "p_rest", "p_right",
+        "active_left", "active_rest", "active_right",
         "feedback_mode",
     ])
     log(f"Log de inferência: {path}")
     return f, w, path
 
 
-def class_outputs(clf, feat: np.ndarray, model_meta: Dict[str, Any]) -> tuple[float, float, float]:
-    classes = list(getattr(clf, "classes_", []))
-    probs: dict[Any, float] = {}
-
-    if hasattr(clf, "predict_proba"):
-        values = clf.predict_proba(feat.reshape(1, -1))[0]
-        probs = {cls: float(values[i]) for i, cls in enumerate(classes)}
-    else:
-        pred = clf.predict(feat.reshape(1, -1))[0]
-        probs = {cls: (1.0 if cls == pred else 0.0) for cls in classes}
-
-    class_map = model_meta.get("classes_map", {}) if isinstance(model_meta, dict) else {}
-    out = {"LEFT_MI_STIM": 0.0, "BOTH_MI_STIM": 0.0, "RIGHT_MI_STIM": 0.0}
-    for event_label in MOTOR_CLASS_ORDER:
-        model_class = class_map.get(event_label, None)
-        if model_class is None:
-            continue
-        # JSON pode serializar IDs como int; sklearn usa numpy/int.
-        for candidate in (model_class, int(model_class) if str(model_class).lstrip("-").isdigit() else model_class):
-            if candidate in probs:
-                out[event_label] = float(probs[candidate])
-                break
-
-    # Fallback de compatibilidade para modelos binários antigos 0=LEFT, 1=RIGHT.
-    if not class_map and 0 in probs and 1 in probs:
-        out["LEFT_MI_STIM"] = probs[0]
-        out["RIGHT_MI_STIM"] = probs[1]
-
-    return out["LEFT_MI_STIM"], out["BOTH_MI_STIM"], out["RIGHT_MI_STIM"]
+def class_outputs(clf, feat: np.ndarray, model_meta: Dict[str, Any]):
+    """Probabilidades semânticas diretamente de predict_proba + classes ativas."""
+    return classifier_probabilities(clf, feat, model_meta)
 
 
 def run_realtime_decoder(cfg: AppConfig, mode: str = "online", model_prefix: Optional[str] = None, stop_event: Optional[threading.Event] = None, feedback_mode: str = "pca"):
@@ -381,8 +349,8 @@ def run_realtime_decoder(cfg: AppConfig, mode: str = "online", model_prefix: Opt
                     rep1 = float(rep[0])
                     rep2 = float(rep[1])
 
-                    left, both, right = class_outputs(clf, feat, meta)
-                    vec = [rep1, rep2, left, both, right]
+                    probs, active = class_outputs(clf, feat, meta)
+                    vec = signal_vector(rep1, rep2, probs, active)
                     outlet.push_sample(vec, timestamp=local_clock())
 
                     t_out = float(buf_t[-1])
@@ -396,9 +364,12 @@ def run_realtime_decoder(cfg: AppConfig, mode: str = "online", model_prefix: Opt
                         f"{p2_raw:.6f}",
                         f"{rep1:.6f}",
                         f"{rep2:.6f}",
-                        f"{left:.6f}",
-                        f"{both:.6f}",
-                        f"{right:.6f}",
+                        f"{probs['LEFT_MI_STIM']:.6f}",
+                        f"{probs['REST_STIM']:.6f}",
+                        f"{probs['RIGHT_MI_STIM']:.6f}",
+                        f"{active['LEFT_MI_STIM']:.0f}",
+                        f"{active['REST_STIM']:.0f}",
+                        f"{active['RIGHT_MI_STIM']:.0f}",
                         str(feedback_mode),
                     ])
                     next_compute += hop_n

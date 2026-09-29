@@ -91,15 +91,19 @@ A sequência experimental continua LEFT + RIGHT + REST_STIM nas duas etapas.
 
 O `online_model_prefix: "latest"` e `model_session_types: ["IM_treino"]` fazem o online usar automaticamente o modelo da IM mais recente, portanto a segunda etapa não reutiliza por engano o modelo da primeira.
 
-## Unity
+## Feedback contínuo e Unity
 
-A interface do decoder permanece compatível:
+Os papéis dos streams ficam separados:
 
 ```text
-Signal / BCI = [rep1, rep2, left, both, right]
+Signal / BCI
+= [rep1, rep2, p_left, p_rest, p_right, active_left, active_rest, active_right]
+
+GrazMI_Control / BCIControl
+= camada de decisão/histerese; left_leg/right_leg movem o avatar
 ```
 
-`REST_STIM` não cria um canal motor extra. Quando REST é dominante, nenhuma perna deve ser ativada.
+`p_left/p_rest/p_right` vêm diretamente de `predict_proba`, antes do controlador. Em single-target, a classe que não participa do modelo fica com probabilidade 0 e `active_* = 0`; não há renormalização incluindo essa classe. `REST_STIM` nunca gera movimento bilateral.
 
 A lógica visual do Unity deve mapear os cues assim:
 
@@ -125,3 +129,35 @@ right_foot.png
 ```
 
 O `.psyexp` lê `stims_sequence.csv` e envia o marcador correspondente no início do cue.
+
+
+## Dashboard / teste do contrato
+
+Com `debug_plot.enabled: true`, `tools/plot_decoder_realtime.py` mostra simultaneamente rep1/rep2, P(LEFT/REST/RIGHT), classes ativas, estado do controlador e left_leg/right_leg. O dashboard apenas consome LSL; não participa da inferência.
+
+Para validar o contrato sem coleta:
+
+```bash
+python tools/simulate_feedback_lsl.py
+```
+
+Para também publicar os vetores de exemplo em LSL:
+
+```bash
+python tools/simulate_feedback_lsl.py --lsl
+```
+
+## Dashboard PCA — mapa KDE estático (v5)
+
+A dashboard em `tools/plot_decoder_realtime.py` agora recebe automaticamente o
+`S#/online/pca_map.json` selecionado pelo `main.py`.
+
+- os limites `rep1/rep2` vêm do JSON do modelo ativo;
+- o `map_image` associado é desenhado uma única vez como background do PCA,
+  preservando as curvas KDE e os rótulos gerados durante a calibração;
+- se o PNG não estiver disponível, a dashboard reconstrói o background a partir
+  dos polígonos de `density_regions` do próprio JSON;
+- somente a trajetória/ponto online é atualizado no loop, portanto o mapa não
+  acrescenta custo relevante à atualização em tempo real;
+- os eixos foram deslocados para baixo e os textos de fase/classes/estado foram
+  separados dos títulos para evitar sobreposição.

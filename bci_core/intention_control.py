@@ -2,16 +2,16 @@
 """Controle de intenção para o feedback motor no Unity.
 
 Camada entre o decoder probabilístico e a animação:
-1) recebe [rep1, rep2, P(left), P(both), P(right)] do decoder;
+1) recebe rep1/rep2 + P(LEFT/REST/RIGHT) + flags de classes ativas;
 2) usa as regiões HDR salvas em online/pca_map.json como gate espacial;
 3) usa probabilidades do SVM para resolver sobreposições entre classes;
 4) aplica persistência temporal + histerese espacial;
 5) publica estado discreto e posições contínuas das pernas.
 
-Estado discreto:
+Estado discreto no GrazMI_Control (compatibilidade):
     0 REST
     1 LEFT
-    2 BOTH
+    2 reservado ao BOTH legado (não usado)
     3 RIGHT
 
 A posição de cada perna fica em [0, 1]. Enquanto uma classe está ativa a
@@ -34,21 +34,12 @@ import numpy as np
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop, local_clock
 
 from .config_models import AppConfig
-from .class_schema import MOTOR_CLASS_ORDER, decoder_channel, display_name
+from .class_schema import display_name
+from .feedback_contract import (
+    FEEDBACK_CLASS_ORDER, SIGNAL_CHANNELS, probabilities_from_signal,
+    active_flags_from_signal, movement_targets, legacy_state_id,
+)
 
-
-STATE_ID = {
-    "REST": 0,
-    "LEFT_MI_STIM": 1,
-    "BOTH_MI_STIM": 2,
-    "RIGHT_MI_STIM": 3,
-}
-
-PROB_CHANNEL_INDEX = {
-    "LEFT_MI_STIM": 2,
-    "BOTH_MI_STIM": 3,
-    "RIGHT_MI_STIM": 4,
-}
 
 
 def log(msg: str) -> None:
@@ -103,14 +94,13 @@ def _active_labels(map_data: dict[str, Any]) -> list[str]:
             if not isinstance(row, dict):
                 continue
             lab = str(row.get("event_label", "")).strip().upper()
-            if lab in MOTOR_CLASS_ORDER and lab not in labels:
+            if lab in FEEDBACK_CLASS_ORDER and lab not in labels:
                 labels.append(lab)
     if labels:
-        return [lab for lab in MOTOR_CLASS_ORDER if lab in labels]
+        return [lab for lab in FEEDBACK_CLASS_ORDER if lab in labels]
 
-    # Compatibilidade com mapa v2 sem regiões numéricas.
     events = [str(v).strip().upper() for v in map_data.get("event_labels", [])]
-    return [lab for lab in MOTOR_CLASS_ORDER if lab in events]
+    return [lab for lab in FEEDBACK_CLASS_ORDER if lab in events]
 
 
 def _region_row(map_data: dict[str, Any], label: str) -> Optional[dict[str, Any]]:
@@ -172,22 +162,12 @@ def _inside_region(rep1: float, rep2: float, region: Optional[dict[str, Any]]) -
 
 
 def _probabilities(sample) -> dict[str, float]:
-    arr = list(sample)
-    out = {}
-    for label, idx in PROB_CHANNEL_INDEX.items():
-        out[label] = float(arr[idx]) if idx < len(arr) else 0.0
-    return out
+    return probabilities_from_signal(sample)
 
 
 def _probability_margin_ok(label: str, probs: dict[str, float], active_labels: list[str], min_margin: float) -> bool:
     p = float(probs.get(label, 0.0))
-    motor_sum = sum(max(0.0, float(probs.get(lab, 0.0))) for lab in MOTOR_CLASS_ORDER)
-    # REST_STIM não ocupa um canal extra no stream para preservar a interface
-    # [rep1, rep2, left, both, right]. Como predict_proba soma 1, sua
-    # probabilidade pode ser reconstruída como o residual das classes motoras.
-    p_rest = float(np.clip(1.0 - motor_sum, 0.0, 1.0))
     others = [float(probs.get(other, 0.0)) for other in active_labels if other != label]
-    others.append(p_rest)
     second = max(others) if others else 0.0
     return (p - second) >= float(min_margin)
 
@@ -207,6 +187,7 @@ class DecisionSnapshot:
     rep1: float = 0.0
     rep2: float = 0.0
     probs: dict[str, float] | None = None
+    active_flags: dict[str, float] | None = None
     entry_inside: dict[str, bool | None] | None = None
     hold_inside: dict[str, bool | None] | None = None
     active_label: str | None = None
@@ -232,16 +213,19 @@ class IntentionStateMachine:
         self.pending_label: str | None = None
         self.pending_since: float | None = None
         self.exit_since: float | None = None
-        self.snapshot = DecisionSnapshot(probs={lab: 0.0 for lab in MOTOR_CLASS_ORDER})
+        self.snapshot = DecisionSnapshot(
+            probs={lab: 0.0 for lab in FEEDBACK_CLASS_ORDER},
+            active_flags={lab: 0.0 for lab in FEEDBACK_CLASS_ORDER},
+        )
 
     def _inside(self, label: str, rep1: float, rep2: float, mass: float) -> bool | None:
         row = _region_row(self.map_data, label)
         region = _closest_region(row, mass)
         return _inside_region(rep1, rep2, region)
 
-    def _entry_candidates(self, entry: dict[str, bool | None], probs: dict[str, float]) -> list[str]:
+    def _entry_candidates(self, entry: dict[str, bool | None], probs: dict[str, float], labels: list[str]) -> list[str]:
         candidates = []
-        for label in self.active_labels:
+        for label in labels:
             inside = entry.get(label)
             spatial_ok = inside is True
             if inside is None and self.allow_probability_fallback:
@@ -250,27 +234,62 @@ class IntentionStateMachine:
                 continue
             if float(probs.get(label, 0.0)) < self.min_probability:
                 continue
-            if not _probability_margin_ok(label, probs, self.active_labels, self.min_probability_margin):
+            if not _probability_margin_ok(label, probs, labels, self.min_probability_margin):
                 continue
             candidates.append(label)
         return sorted(candidates, key=lambda lab: float(probs.get(lab, 0.0)), reverse=True)
 
+    def _set_pending(self, candidate: str | None, now_mono: float) -> bool:
+        """Retorna True quando a persistência de entrada foi satisfeita."""
+        if candidate is None:
+            self.pending_label = None
+            self.pending_since = None
+            return False
+        if candidate != self.pending_label:
+            self.pending_label = candidate
+            self.pending_since = now_mono
+            return False
+        return self.pending_since is not None and (now_mono - self.pending_since) >= self.enter_persist_s
+
     def process(self, sample, decoder_lsl_time: float, now_mono: float) -> DecisionSnapshot:
-        if len(sample) < 5:
-            raise ValueError("Decoder deve publicar [rep1, rep2, left, both, right].")
+        if len(sample) < len(SIGNAL_CHANNELS):
+            raise ValueError(
+                f"Decoder deve publicar {len(SIGNAL_CHANNELS)} canais: {', '.join(SIGNAL_CHANNELS)}."
+            )
 
         rep1, rep2 = float(sample[0]), float(sample[1])
         probs = _probabilities(sample)
-        entry = {lab: self._inside(lab, rep1, rep2, self.entry_mass) for lab in self.active_labels}
-        hold = {lab: self._inside(lab, rep1, rep2, self.hold_mass) for lab in self.active_labels}
+        flags = active_flags_from_signal(sample)
+        available = [lab for lab in self.active_labels if flags.get(lab, 0.0) >= 0.5]
+        if not available:
+            available = [lab for lab in FEEDBACK_CLASS_ORDER if flags.get(lab, 0.0) >= 0.5]
 
-        # 1) Estado já ativo: só o libera após permanecer fora da região de hold.
-        if self.active_label is not None:
+        if self.active_label is not None and self.active_label not in available:
+            self.active_label = None
+            self.pending_label = None
+            self.pending_since = None
+            self.exit_since = None
+
+        entry = {lab: self._inside(lab, rep1, rep2, self.entry_mass) for lab in available}
+        hold = {lab: self._inside(lab, rep1, rep2, self.hold_mass) for lab in available}
+        candidates = self._entry_candidates(entry, probs, available)
+        candidate = candidates[0] if candidates else None
+
+        # Permite troca explícita entre LEFT/REST/RIGHT após persistência.
+        # Assim, REST reconhecido pode interromper uma perna sem qualquer mapeamento bilateral.
+        if self.active_label is not None and candidate is not None and candidate != self.active_label:
+            if self._set_pending(candidate, now_mono):
+                self.active_label = candidate
+                self.pending_label = None
+                self.pending_since = None
+                self.exit_since = None
+        elif self.active_label is not None:
+            self.pending_label = None
+            self.pending_since = None
             current = self.active_label
             inside_hold = hold.get(current)
             if inside_hold is None and self.allow_probability_fallback:
                 inside_hold = float(probs.get(current, 0.0)) >= self.min_probability
-
             if inside_hold:
                 self.exit_since = None
             else:
@@ -279,27 +298,16 @@ class IntentionStateMachine:
                 if now_mono - self.exit_since >= self.exit_persist_s:
                     self.active_label = None
                     self.exit_since = None
-                    self.pending_label = None
-                    self.pending_since = None
 
-        # 2) REST: procura uma classe cujo núcleo foi atingido de forma persistente.
         if self.active_label is None:
-            candidates = self._entry_candidates(entry, probs)
-            candidate = candidates[0] if candidates else None
-            if candidate is None:
-                self.pending_label = None
-                self.pending_since = None
-            elif candidate != self.pending_label:
-                self.pending_label = candidate
-                self.pending_since = now_mono
-            elif self.pending_since is not None and now_mono - self.pending_since >= self.enter_persist_s:
+            if self._set_pending(candidate, now_mono):
                 self.active_label = candidate
                 self.pending_label = None
                 self.pending_since = None
                 self.exit_since = None
 
         active = self.active_label
-        confidence = float(probs.get(active, 0.0)) if active else (max(probs.values()) if probs else 0.0)
+        confidence = float(probs.get(active, 0.0)) if active else (max((probs.get(l, 0.0) for l in available), default=0.0))
         density_gate = 0.0
         if active:
             inside = hold.get(active)
@@ -309,14 +317,9 @@ class IntentionStateMachine:
             density_gate = 1.0 if inside is True else 0.0
 
         self.snapshot = DecisionSnapshot(
-            rep1=rep1,
-            rep2=rep2,
-            probs=probs,
-            entry_inside=entry,
-            hold_inside=hold,
-            active_label=active,
-            confidence=confidence,
-            density_gate=density_gate,
+            rep1=rep1, rep2=rep2, probs=probs, active_flags=flags,
+            entry_inside=entry, hold_inside=hold, active_label=active,
+            confidence=confidence, density_gate=density_gate,
             decoder_lsl_time=float(decoder_lsl_time),
         )
         return self.snapshot
@@ -362,7 +365,7 @@ def _make_control_outlet(cfg: AppConfig, srate: float, feedback_mode: str) -> St
         ch.append_child_value("label", label)
         ch.append_child_value("unit", "a.u.")
         ch.append_child_value("type", "BCIControl")
-    root.append_child_value("state_codes", "0=REST;1=LEFT;2=BOTH;3=RIGHT")
+    root.append_child_value("state_codes", "0=REST;1=LEFT;2=UNUSED_LEGACY_BOTH;3=RIGHT")
     root.append_child_value("feedback_mode", str(feedback_mode))
     return StreamOutlet(info)
 
@@ -377,9 +380,10 @@ def _open_logger(cfg: AppConfig, feedback_mode: str):
     w = csv.writer(f)
     w.writerow([
         "iso_time", "lsl_time_s", "decoder_lsl_time_s", "feedback_mode",
-        "rep1", "rep2", "p_left", "p_both", "p_right",
-        "entry_left", "entry_both", "entry_right",
-        "hold_left", "hold_both", "hold_right",
+        "rep1", "rep2", "p_left", "p_rest", "p_right",
+        "active_left", "active_rest", "active_right",
+        "entry_left", "entry_rest", "entry_right",
+        "hold_left", "hold_rest", "hold_right",
         "state", "state_id", "confidence", "density_gate",
         "left_leg", "right_leg",
     ])
@@ -408,7 +412,7 @@ def run_intention_controller(
     map_data = _load_map(cfg)
     sm = IntentionStateMachine(map_data, ccfg)
     if not sm.active_labels:
-        raise RuntimeError("pca_map.json não informa classes motoras ativas.")
+        raise RuntimeError("pca_map.json não informa classes LEFT/REST/RIGHT ativas.")
 
     has_numeric_regions = bool(map_data.get("density_regions"))
     log(f"Mapa: {map_data.get('_path')}")
@@ -464,17 +468,16 @@ def run_intention_controller(
             dt_s = max(0.0, now_mono - last_update)
             last_update = now_mono
             active = sm.active_label
-            target_left = 1.0 if active in {"LEFT_MI_STIM", "BOTH_MI_STIM"} else 0.0
-            target_right = 1.0 if active in {"RIGHT_MI_STIM", "BOTH_MI_STIM"} else 0.0
+            target_left, target_right = movement_targets(active)
             left_leg = _approach_binary(left_leg, target_left, dt_s, rise_s, fall_s)
             right_leg = _approach_binary(right_leg, target_right, dt_s, rise_s, fall_s)
 
-            state = "REST" if active is None else display_name(active)
-            sid = STATE_ID.get(active or "REST", 0)
+            state = "REST" if active in {None, "REST_STIM"} else display_name(active)
+            sid = legacy_state_id(active)
             onehot = {
                 "REST": 1.0 if sid == 0 else 0.0,
                 "LEFT": 1.0 if sid == 1 else 0.0,
-                "BOTH": 1.0 if sid == 2 else 0.0,
+                "BOTH": 0.0,
                 "RIGHT": 1.0 if sid == 3 else 0.0,
             }
             snap = sm.snapshot
@@ -487,6 +490,7 @@ def run_intention_controller(
             outlet.push_sample(vec, timestamp=t_lsl)
 
             probs = snap.probs or {}
+            flags = snap.active_flags or {}
             entry = snap.entry_inside or {}
             hold = snap.hold_inside or {}
             wcsv.writerow([
@@ -494,13 +498,16 @@ def run_intention_controller(
                 f"{t_lsl:.9f}", f"{snap.decoder_lsl_time:.9f}", str(feedback_mode),
                 f"{snap.rep1:.6f}", f"{snap.rep2:.6f}",
                 f"{probs.get('LEFT_MI_STIM', 0.0):.6f}",
-                f"{probs.get('BOTH_MI_STIM', 0.0):.6f}",
+                f"{probs.get('REST_STIM', 0.0):.6f}",
                 f"{probs.get('RIGHT_MI_STIM', 0.0):.6f}",
+                f"{flags.get('LEFT_MI_STIM', 0.0):.0f}",
+                f"{flags.get('REST_STIM', 0.0):.0f}",
+                f"{flags.get('RIGHT_MI_STIM', 0.0):.0f}",
                 _bool_num(entry.get("LEFT_MI_STIM")),
-                _bool_num(entry.get("BOTH_MI_STIM")),
+                _bool_num(entry.get("REST_STIM")),
                 _bool_num(entry.get("RIGHT_MI_STIM")),
                 _bool_num(hold.get("LEFT_MI_STIM")),
-                _bool_num(hold.get("BOTH_MI_STIM")),
+                _bool_num(hold.get("REST_STIM")),
                 _bool_num(hold.get("RIGHT_MI_STIM")),
                 state, sid, f"{snap.confidence:.6f}", f"{snap.density_gate:.1f}",
                 f"{left_leg:.6f}", f"{right_leg:.6f}",
