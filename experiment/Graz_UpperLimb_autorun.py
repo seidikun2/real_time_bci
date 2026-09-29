@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2025.1.1),
-    on September 28, 2026, at 21:59
+    on September 28, 2026, at 22:41
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -47,7 +47,7 @@ runAtExit = []
 # information about this experiment
 expInfo = {
     'participant': os.environ.get("BCI_SUBJECT_ID", 'TEST'),
-    'session': os.environ.get("BCI_SESSION_ID", '1'),
+    'session': os.environ.get("BCI_SESSION_ID", '2'),
     'date|hid': data.getDateStr(),
     'expName|hid': expName,
     'expVersion|hid': expVersion,
@@ -672,7 +672,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # set up handler to look after randomisation of conditions etc
     trials = data.TrialHandler2(
         name='trials',
-        nReps=2.0, 
+        nReps=3.0, 
         method='random', 
         extraInfo=expInfo, 
         originPath=-1, 
@@ -1227,7 +1227,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             trials.status = STARTED
         thisExp.nextEntry()
         
-    # completed 2.0 repeats of 'trials'
+    # completed 3.0 repeats of 'trials'
     trials.status = FINISHED
     
     if thisSession is not None:
