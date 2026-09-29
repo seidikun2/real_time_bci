@@ -703,16 +703,16 @@ def start_debug_plot(cfg: AppConfig, raw: dict, model_ref: str | None = None) ->
     if not script.exists():
         print(f"[main] Debug plot habilitado, mas não encontrado: {script}")
         return None
-    ccfg = raw.get("control", {}) or {}
     cmd = [
         sys.executable, str(script),
         "--decoder-name", getattr(cfg.decoder, "outlet_name", "Signal"),
         "--decoder-type", getattr(cfg.decoder, "outlet_type", "BCI"),
-        "--control-name", str(ccfg.get("outlet_name", "GrazMI_Control")),
-        "--control-type", str(ccfg.get("outlet_type", "BCIControl")),
         "--marker-name", getattr(cfg.lsl, "marker_name", "GrazMI_Markers"),
         "--marker-type", getattr(cfg.lsl, "marker_type", "Markers"),
+        "--plot-hz", str(float(dcfg.get("plot_hz", 5.0))),
     ]
+    if not bool(dcfg.get("show_markers", True)):
+        cmd.append("--no-markers")
     meta = read_model_meta(model_ref) if model_ref else {}
 
     # A dashboard usa o mapa canônico publicado para o online. O JSON define
@@ -727,7 +727,7 @@ def start_debug_plot(cfg: AppConfig, raw: dict, model_ref: str | None = None) ->
     xlim, ylim = meta.get("pca_train_xlim"), meta.get("pca_train_ylim")
     if xlim and ylim:
         cmd += ["--pca-xlim", str(xlim[0]), str(xlim[1]), "--pca-ylim", str(ylim[0]), str(ylim[1])]
-    print("[main] Abrindo dashboard Python PCA + probabilidades + controle (debug_plot.enabled=true).")
+    print("[main] Abrindo dashboard leve do experimentador: PCA + probabilidades (debug_plot.enabled=true).")
     flags = 0
     if os.name == "nt" and bool(dcfg.get("new_console", False)):
         flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)

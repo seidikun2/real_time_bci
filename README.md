@@ -1,3 +1,12 @@
+
+## Dashboard v9 — estado atual no PCA
+
+A dashboard do experimentador não desenha mais a trajetória histórica no PCA.
+O mapa KDE da calibração permanece estático e apenas o ponto `rep1/rep2` atual é
+atualizado. Isso remove a aparência de uma trilha que muda entre frames e reduz
+o trabalho gráfico. A cada frame da GUI, se houver várias amostras LSL pendentes,
+somente a mais recente é usada. Decoder e `GrazMI_Control` não foram alterados.
+
 # BCI — protocolo em duas etapas
 
 Execute sempre pela raiz:
@@ -161,3 +170,40 @@ A dashboard em `tools/plot_decoder_realtime.py` agora recebe automaticamente o
   acrescenta custo relevante à atualização em tempo real;
 - os eixos foram deslocados para baixo e os textos de fase/classes/estado foram
   separados dos títulos para evitar sobreposição.
+
+
+## Dashboard v6 — correção do event loop
+
+A dashboard agora usa o timer nativo do canvas + `plt.show(block=True)` em vez de um loop manual com `flush_events()`. Isso evita erros do backend Tk como `RuntimeError: main thread is not in main loop` e `Tcl_AsyncDelete`, mantendo a dashboard apenas como consumidora dos streams LSL. O mapa PCA/KDE continua estático ao fundo.
+
+## v7 — dashboard leve do experimentador
+
+A dashboard Python foi simplificada para ser uma janela secundária ao Unity:
+
+- mostra somente o **mapa PCA/KDE estático**, a posição/trilha curta de `rep1/rep2`,
+  `p_left`, `p_rest`, `p_right`, classes ativas e a fase/cue do PsychoPy;
+- **não consome nem plota `GrazMI_Control`**; esse stream continua sendo produzido
+  normalmente e continua responsável pelo movimento do avatar no Unity;
+- atualização visual padrão reduzida para **8 Hz**; isso não altera a taxa do decoder;
+- trilha PCA padrão reduzida para **3 s / máximo de 96 pontos desenhados**;
+- uso de **blitting** quando suportado pelo backend, mantendo o mapa KDE fora dos
+  redraws normais e melhorando a responsividade ao mover a janela;
+- janela compacta (`9.2 x 3.9`) para permanecer no canto durante o experimento.
+
+Parâmetros em `config.yaml`:
+
+```yaml
+debug_plot:
+  plot_hz          : 8.0
+  trail_s          : 3.0
+  max_trace_points : 96
+  show_markers     : true
+```
+
+Se ainda quiser uma GUI mais leve, `plot_hz: 5.0` é suficiente para monitoramento
+visual sem alterar em nada a inferência ou o controle enviado ao Unity.
+
+
+## v8 — dashboard aparece imediatamente
+
+A dashboard agora cria a janela **antes** de procurar `Signal / BCI`. A descoberta LSL é feita de forma não bloqueante dentro do timer da GUI. Assim, mesmo enquanto o decoder está inicializando, a janela aparece com `Signal: aguardando`. O blitting só é ativado depois do primeiro `draw_event` do backend, evitando chamadas de `draw()` antes do `Tk` estar no mainloop. Defaults da GUI: 5 Hz, trilha 2.5 s, 64 pontos. Isso não altera a taxa do decoder nem `GrazMI_Control`.

@@ -35,7 +35,7 @@ runtime:
 
 protocol:
   stage          : "two_legs"  # single_target | two_legs
-  start_phase    : "auto"           # auto | execution | imagery | online
+  start_phase    : "online"           # auto | execution | imagery | online
 
   # Usado somente em single_target.
   online_target  : "right"          # left | right
@@ -153,12 +153,12 @@ control:
   outlet_type                 : "BCIControl"
   entry_density_mass          : 0.50
   hold_density_mass           : 0.80
-  enter_persist_s             : 0.25
-  exit_persist_s              : 0.20
+  enter_persist_s             : 0.10
+  exit_persist_s              : 0.10
   min_probability             : 0.40
   min_probability_margin      : 0.05
   allow_probability_fallback  : true
-  movement_rise_s             : 1.20
+  movement_rise_s             : 1.00
   movement_fall_s             : 0.80
   output_rate_hz              : 60.0
   decoder_stale_s             : 0.60
@@ -205,6 +205,10 @@ hiamp:
   chunk                   : 10
 
 debug_plot:
-  enabled      : true
-  script       : "tools/plot_decoder_realtime.py"
-  new_console  : false
+  enabled          : true
+  script           : "tools/plot_decoder_realtime.py"
+  new_console      : false
+  # Dashboard secundária do experimentador. A inferência continua na taxa normal;
+  # apenas a GUI é atualizada mais devagar para permanecer leve e responsiva.
+  plot_hz          : 5.0      # só a GUI; decoder continua na taxa normal
+  show_markers     : true

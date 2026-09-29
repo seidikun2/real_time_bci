@@ -1,0 +1,25 @@
+Signal / BCI:
+  rep1, rep2, p_left, p_rest, p_right, active_left, active_rest, active_right
+
+single_target_LEFT
+  Signal : [0.20, -0.15, 0.82, 0.18, 0.00, 1.00, 1.00, 0.00]
+  state  : LEFT_MI_STIM
+  Control: [1.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.82, 1.00, 1.00]
+
+single_target_RIGHT
+  Signal : [-0.10, 0.30, 0.00, 0.20, 0.80, 0.00, 1.00, 1.00]
+  state  : RIGHT_MI_STIM
+  Control: [0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.80, 1.00, 3.00]
+
+two_legs
+  Signal : [0.35, 0.05, 0.15, 0.20, 0.65, 1.00, 1.00, 1.00]
+  state  : RIGHT_MI_STIM
+  Control: [0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.65, 1.00, 3.00]
+
+REST_dominante
+  Signal : [0.00, 0.00, 0.08, 0.84, 0.08, 1.00, 1.00, 1.00]
+  state  : REST_STIM
+  Control: [0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.84, 1.00, 0.00]
+
+[OK] single LEFT, single RIGHT e two_legs validados.
+[OK] p_rest alto -> left_leg=0 e right_leg=0; BOTH legado permanece 0.

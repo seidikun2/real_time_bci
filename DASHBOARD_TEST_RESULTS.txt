@@ -1,0 +1,7 @@
+Dashboard v5 validation
+- py_compile: OK for main.py, bci_core/*.py and tools/*.py
+- pca_map.json limits loaded: OK
+- paired map_image rendered as static PCA background: OK
+- missing PNG fallback to density_regions polygons: OK
+- plot layout renders with increased top margin and separated status/title rows: OK
+- no PsychoPy/marker/classifier logic changed in this revision
