@@ -35,7 +35,7 @@ runtime:
 
 protocol:
   stage          : "two_legs"  # single_target | two_legs
-  start_phase    : "online"           # auto | execution | imagery | online
+  start_phase    : "imagery"           # auto | execution | imagery | online
 
   # Usado somente em single_target.
   online_target  : "right"          # left | right
