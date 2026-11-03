@@ -25,10 +25,10 @@
 
 experiment:
   subject_id    : "TEST"
-  session_id    : 2
+  session_id    : 1
   exp_name      : "TEST"
   session_type  : "IM_treino"   # o main altera conforme a fase
-  log_root      : "C:/Users/User/Desktop/Dados"
+  log_root      : "/home/seidi/dados_seidi"
 
 runtime:
   simulate_signal  : true        # true = simulação; false = g.HIamp
